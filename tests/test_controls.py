@@ -12,6 +12,12 @@ from flat_rubik.cube import Cube, FACE_COLORS
 
 
 class MouseControlsTests(unittest.TestCase):
+    def setUp(self):
+        from flat_rubik.editor import ColorEditor
+        isolation = patch("flat_rubik.app.ColorEditor", side_effect=lambda *args, **kwargs: ColorEditor())
+        isolation.start()
+        self.addCleanup(isolation.stop)
+
     # Interior points of the six drawn center regions at 800 x 800.
     centers = {"F": (400, 400), "B": (715, 400), "U": (400, 255),
                "R": (545, 400), "D": (400, 545), "L": (255, 400)}

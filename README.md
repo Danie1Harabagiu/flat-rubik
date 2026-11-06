@@ -26,6 +26,7 @@ python main.py
 | Esc | Ieșire |
 | P | Pauză / continuare |
 | + / - | Mărește / micșorează durata rotației |
+| E | Deschide editorul „Culori”; în editor renunță la modificări |
 
 F = roșu, B = portocaliu, U = galben, R = verde, D = alb, L = albastru.
 Clicurile funcționează pe cercul roșu, inelul portocaliu și cele patru
@@ -41,6 +42,47 @@ păstrează progresul curent, fără salt. Butonul „Pauză” oprește tempora
 animația pentru a inspecta piesele; „Continuă” reia din același punct.
 Interfața rămâne activă pe durata animației; ținta este 60 FPS.
 Fereastra este redimensionabilă.
+
+## Introducerea culorilor cubului fizic
+
+Apasă **Culori** sau **E** și dă clic pe suprafața pe care vrei s-o colorezi.
+Fiecare clic trece la culoarea următoare, fără selecție din paletă.
+Întreaga suprafață își schimbă culoarea. Copiază
+astfel configurația cubului fizic. Orientează cubul fizic cu roșu în față,
+portocaliu în spate, galben sus, alb jos, verde dreapta și albastru stânga.
+Cele șase centre rămân fixe; cele 48 de suprafețe mobile pot fi editate.
+
+- Clic stânga: următoarea culoare (roșu → portocaliu → galben → verde → albastru → alb → roșu).
+- Clic dreapta: culoarea precedentă, în sens invers.
+- **Anulează** sau **Ctrl+Z**: anulează ultima modificare.
+- **Rezolvat** sau **Delete**: pregătește configurația rezolvată în editor.
+- **Random valid**: pregătește o configurație aleatorie posibilă.
+- **Aplică** sau **Enter**: verifică și instalează configurația pentru rotații.
+- **Renunță**, **E** sau **Esc**: închide editorul fără schimbarea cubului activ.
+
+Contorul arată numărul suprafețelor din fiecare culoare; trebuie să existe
+câte 9. Aplicarea verifică și combinațiile muchiilor/colțurilor, piesele
+duplicate, orientările, colțurile în oglindă și paritatea permutărilor.
+O stare imposibilă afișează motivul și rămâne deschisă pentru corectare.
+La aplicare se reconstruiesc identitățile și orientările celor 26 de cubulețe,
+iar rotațiile și animațiile folosesc efectiv configurația introdusă.
+
+În editor, animația și coada sunt suspendate. Aplicarea înlocuiește starea
+și golește mutările vechi; renunțarea permite continuarea stării anterioare.
+Lucrul în curs și ultima configurație aplicată se salvează separat în
+`cube_colors.json`, ignorat de Git. La pornire se restaurează ultima stare
+aplicată, iar editorul permite reluarea culorilor neterminate. Rotațiile
+efectuate ulterior nu rescriu configurația manuală salvată.
+
+[Editorul culorilor](assets/colors-preview.png)
+
+## Amestecare în configurații posibile
+
+Butonul **Amestecă** sau **Spațiu** adaugă 25 de mutări Rubik legale în coadă.
+Configurațiile provin exclusiv din rotații ale cubului real; nu se generează
+culori independente pe suprafețe. Astfel, pornind de la cubul rezolvat,
+amestecarea păstrează configurații fizic posibile. În editor, **Random valid**
+pregătește o asemenea configurație, pe care o poți instala prin **Aplică**.
 
 ## Interfață și urmărirea mutărilor
 
@@ -127,8 +169,15 @@ Ferestrele foarte mici reduc lizibilitatea contururilor și a textului.
 - `renderer.py`: culori, contururi și centre fixe.
 - `app.py`: evenimente, tastatură, redimensionare și buclă la 60 FPS.
 - `ui.py`: panou adaptabil, butoane și glisor pentru durata rotației.
+- `editor.py`: selectarea și colorarea suprafețelor, anulare și salvare locală.
+- `state.py`: reconstruirea cubulețelor și validarea unei configurații fizic posibile.
 
 ## Teste
+
+[Verificarea față de cubul fizic](docs/physical-model-audit.md) include
+comparația cu o referință independentă și un protocol practic de urmărit
+alături de cubul real. Testele dedicate verifică toate cele 18 mutări,
+324 de perechi, 5.000 de pași și 1.000 de stări valide generate separat.
 
 ```powershell
 python -m unittest discover -s tests -v

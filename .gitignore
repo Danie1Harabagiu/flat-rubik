@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .venv/
 .vscode/
+position_markers.json
+position_markers.tmp
+cube_colors.json
+cube_colors.tmp

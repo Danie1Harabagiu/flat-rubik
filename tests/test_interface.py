@@ -13,6 +13,13 @@ from copy import deepcopy
 
 
 class InterfaceTests(unittest.TestCase):
+    def setUp(self):
+        from flat_rubik.editor import ColorEditor
+        # Keep the user's saved configuration independent of UI tests.
+        isolation = patch("flat_rubik.app.ColorEditor", side_effect=lambda *args, **kwargs: ColorEditor())
+        isolation.start()
+        self.addCleanup(isolation.stop)
+
     def test_speed_change_preserves_progress_and_contour(self):
         animator = Animator(duration=1)
         animator.enqueue("R")

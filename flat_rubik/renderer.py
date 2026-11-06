@@ -6,6 +6,7 @@ from functools import lru_cache
 from flat_rubik.cube import CENTRE, FACE_COLORS
 from flat_rubik.geometry import geometrie_centre, sector_inel, INNER_RADII, OUTER_RADII, ORANGE_RADII
 from flat_rubik.layer_motion import layer_paths, moving_cubies
+from flat_rubik.editor import slot_regions
 
 BACKGROUND_RGB = (180, 150, 210)
 OUTLINE_RGB = (68, 22, 104)
@@ -75,7 +76,7 @@ def draw_routes(screen, animator):
     screen.blit(layer, (0, 0))
 
 
-def draw(ecran, timp=0, animator=None, hovered=None, show_paths=False):
+def draw(ecran, timp=0, animator=None, hovered=None, show_paths=False, facelets=None):
     latime, inaltime = ecran.get_size()
     forme = geometrie_centre(latime, inaltime)
     scale = min(latime, inaltime) / 800
@@ -86,7 +87,8 @@ def draw(ecran, timp=0, animator=None, hovered=None, show_paths=False):
     draw_zones(ecran, selected)
 
     if animator is not None:
-        shapes = animator.shapes(latime, inaltime)
+        shapes = (animator.shapes(latime, inaltime) if facelets is None else
+                  {(p, n): (facelets[p, n], points) for p, n, points in slot_regions(latime, inaltime)})
         outlines = animator.outlines(latime, inaltime)
         highlighted = {c.id for c in moving_cubies(animator.cube, selected)} if selected else set()
         halo_width = outline_width + max(2, round(4 * scale))

@@ -37,7 +37,11 @@ class Animator:
         return len(self.queue) + int(self.target is not None)
 
     def reset(self):
-        self.cube = Cube()
+        self.set_cube(Cube())
+
+    def set_cube(self, cube):
+        """Install an already validated physical state and discard old moves."""
+        self.cube = deepcopy(cube)
         self.queue.clear()
         self.target = None
         self.current = None
