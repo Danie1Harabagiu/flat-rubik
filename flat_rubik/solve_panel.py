@@ -6,6 +6,7 @@ import pygame
 from flat_rubik.renderer import text_surface
 from flat_rubik.solve_job import SearchJob
 from flat_rubik.solver import SearchResult, history_solution
+from flat_rubik.cube import inverse
 
 
 def solve_layout(size):
@@ -14,7 +15,7 @@ def solve_layout(size):
     panel.center = w / 2, h / 2
     x, y, width = panel.x + 12, panel.y + 12, panel.w - 24
     half = (width - 8) // 2
-    third = (width - 16) // 3
+    fourth = (width - 24) // 4
     return panel, {
         "minus": pygame.Rect(x, y + 52, 30, 30),
         "budget": pygame.Rect(x + 36, y + 52, 78, 30),
@@ -22,18 +23,19 @@ def solve_layout(size):
         "search": pygame.Rect(x, y + 94, half, 32),
         "stop": pygame.Rect(x + half + 8, y + 94, half, 32),
         "steps": pygame.Rect(x, y + 184, width, max(24, panel.h - 272)),
-        "next": pygame.Rect(x, panel.bottom - 42, third, 30),
-        "auto": pygame.Rect(x + third + 8, panel.bottom - 42, third, 30),
-        "close": pygame.Rect(x + 2 * (third + 8), panel.bottom - 42, third, 30),
+        "back": pygame.Rect(x, panel.bottom - 42, fourth, 30),
+        "next": pygame.Rect(x + fourth + 8, panel.bottom - 42, fourth, 30),
+        "auto": pygame.Rect(x + 2 * (fourth + 8), panel.bottom - 42, fourth, 30),
+        "close": pygame.Rect(x + 3 * (fourth + 8), panel.bottom - 42, fourth, 30),
     }
 
 
 def playback_layout(size):
     w, h = size
     panel = pygame.Rect(8, h - 110, w - 16, 102)
-    width = (panel.w - 36) // 4
+    width = (panel.w - 40) // 5
     return panel, {name: pygame.Rect(panel.x + 8 + i * (width + 6), panel.y + 64, width, 30)
-                   for i, name in enumerate(("next", "auto", "plan", "close"))}
+                   for i, name in enumerate(("back", "next", "auto", "plan", "close"))}
 
 
 class SolvePanel:
@@ -47,6 +49,7 @@ class SolvePanel:
         self.solution = None
         self.index = 0
         self.inflight = self.autoplay = self.step_requested = False
+        self.inflight_direction = 1
         self.message = "Alege bugetul si apasa Cauta."
         self.scroll = 0
         self.docked = False
@@ -118,22 +121,37 @@ class SolvePanel:
             self._invalidate()
             return
         if self.inflight:
-            self.index += 1
+            self.index += self.inflight_direction
             self.inflight = False
         steps = self.steps
-        if steps is not None and self.index >= len(steps):
-            self.autoplay = self.step_requested = False
+        if steps is None:
             return
-        if (self.autoplay or self.step_requested) and steps is not None:
+        if self.autoplay or self.step_requested:
+            direction = -1 if self.step_requested == -1 else 1
+            if direction < 0 and self.index <= 0 or direction > 0 and self.index >= len(steps):
+                self.autoplay = self.step_requested = False
+                return
             self.docked = True
             self.job.cancel()
             if self.solution is None:
                 self.solution = tuple(self.job.result.best)
-            move = self.solution[self.index]
+            move = inverse(self.solution[self.index - 1]) if direction < 0 else self.solution[self.index]
             self.expected.move(move)
             animator.enqueue([move])
             self.inflight = True
+            self.inflight_direction = direction
             self.step_requested = False
+
+    def can_step(self, direction):
+        if self.steps is None:
+            return False
+        position = self.index + (self.inflight_direction if self.inflight else 0)
+        return position > 0 if direction < 0 else position < len(self.steps)
+
+    def request_back(self):
+        if self.can_step(-1):
+            self.step_requested = -1
+            self.autoplay = False
 
     def handle(self, event, animator, size):
         _, rects = playback_layout(size) if self.docked else solve_layout(size)
@@ -168,6 +186,8 @@ class SolvePanel:
             elif action == "next" and self.steps is not None:
                 self.step_requested = True
                 self.autoplay = False
+            elif action == "back":
+                self.request_back()
             elif action == "auto" and self.steps is not None:
                 self.autoplay = not self.autoplay
         elif event.type == pygame.MOUSEWHEEL:
@@ -189,6 +209,8 @@ class SolvePanel:
             elif not self.budget_focused and event.key == pygame.K_RIGHT and self.steps is not None:
                 self.step_requested = True
                 self.autoplay = False
+            elif not self.budget_focused and event.key == pygame.K_LEFT:
+                self.request_back()
             elif not self.budget_focused and event.key == pygame.K_SPACE and self.steps is not None:
                 self.autoplay = not self.autoplay
 
@@ -216,10 +238,10 @@ class SolvePanel:
         text("secunde", (x + 160, y + 59), 19)
         result = self.job.result
         captions = {"minus": "-", "budget": self.budget_text, "plus": "+", "search": "Cauta",
-                    "stop": "Opreste", "next": "Pas", "auto": "Pauza" if self.autoplay else "Automat", "close": "Inchide"}
+                    "stop": "Opreste", "back": "Inapoi", "next": "Pas", "auto": "Pauza" if self.autoplay else "Automat", "close": "Inchide"}
         for name, caption in captions.items():
             rect = rects[name]
-            disabled = name in ("next", "auto") and (self.steps is None or self.index >= len(self.steps))
+            disabled = name in ("next", "auto") and not self.can_step(1) or name == "back" and not self.can_step(-1)
             pygame.draw.rect(screen, (225, 217, 233) if disabled else (255, 255, 255), rect, border_radius=5)
             pygame.draw.rect(screen, (93, 40, 139) if name == "budget" and self.budget_focused else (181, 159, 198), rect, 2, border_radius=5)
             text(caption, (rect.x + 6, rect.y + 7), 19, width=rect.w - 12)
@@ -273,13 +295,15 @@ class SolvePanel:
             screen.blit(text, text.get_rect(center=rect.center))
 
         steps = self.steps or ()
-        status = "Rezolvat." if self.index >= len(steps) else f"Pas {self.index + 1}/{len(steps)}: {steps[self.index]}"
+        status = (f"Inapoi: {inverse(steps[self.index - 1])} | {self.index - 1}/{len(steps)}"
+                  if self.inflight and self.inflight_direction < 0 else
+                  "Rezolvat." if self.index >= len(steps) else f"Pas {self.index + 1}/{len(steps)}: {steps[self.index]}")
         label(status, pygame.Rect(panel.x + 8, panel.y + 5, panel.w - 16, 25), 22)
         proof = "Solutie minima demonstrata." if self.job.result.optimal else "Solutie verificata. Optimul nu este demonstrat."
         label(proof, pygame.Rect(panel.x + 8, panel.y + 32, panel.w - 16, 23))
-        captions = {"next": "Pas", "auto": "Pauza" if self.autoplay else "Automat", "plan": "Plan", "close": "Inchide"}
+        captions = {"back": "Inapoi", "next": "Pas", "auto": "Pauza" if self.autoplay else "Automat", "plan": "Plan", "close": "Inchide"}
         for name, rect in rects.items():
-            disabled = name in ("next", "auto") and self.index >= len(steps)
+            disabled = name in ("next", "auto") and not self.can_step(1) or name == "back" and not self.can_step(-1)
             pygame.draw.rect(screen, (225, 217, 233) if disabled else (255, 255, 255), rect, border_radius=5)
             pygame.draw.rect(screen, (181, 159, 198), rect, 1, border_radius=5)
             label(captions[name], rect)

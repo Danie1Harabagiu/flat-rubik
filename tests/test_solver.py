@@ -270,6 +270,64 @@ class SolvePanelTests(unittest.TestCase):
         self.assertIsNotNone(panel.steps)
         self.assertIsNotNone(checked_solution(animator.cube, panel.steps))
 
+    def test_simulation_can_rewind_all_steps_and_replay_same_plan(self):
+        animator = Animator()
+        animator.cube.apply("R U F")
+        initial = animator.cube.snapshot()
+        panel = self.panel()
+        panel.start(animator)
+        while panel.job.busy:
+            panel.update(animator)
+        plan = panel.steps
+        self.assertFalse(panel.can_step(-1))
+        panel.autoplay = True
+        for _ in plan:
+            panel.update(animator)
+            animator.update(1)
+        panel.update(animator)
+        self.assertTrue(animator.cube.solved)
+        self.assertEqual(panel.index, len(plan))
+        for _ in plan:
+            panel.request_back()
+            panel.update(animator)
+            animator.update(1)
+            panel.update(animator)
+        self.assertEqual(animator.cube.snapshot(), initial)
+        self.assertEqual(panel.index, 0)
+        self.assertEqual(panel.steps, plan)
+        panel.request_back()
+        panel.update(animator)
+        self.assertEqual(animator.pending, 0)
+        panel.autoplay = True
+        for _ in plan:
+            panel.update(animator)
+            animator.update(1)
+        panel.update(animator)
+        self.assertTrue(animator.cube.solved)
+
+    def test_back_during_animation_waits_then_reverses_that_exact_step(self):
+        import pygame
+        animator = Animator(duration=1)
+        animator.cube.apply("R U")
+        initial = animator.cube.snapshot()
+        panel = self.panel()
+        panel.start(animator)
+        while panel.job.busy:
+            panel.update(animator)
+        panel.step_requested = True
+        panel.update(animator)
+        animator.update(.3)
+        panel.handle(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT, mod=0), animator, (390, 844))
+        panel.update(animator)
+        self.assertEqual(animator.elapsed, .3)
+        animator.update(.7)
+        panel.update(animator)
+        self.assertEqual(panel.inflight_direction, -1)
+        animator.update(1)
+        panel.update(animator)
+        self.assertEqual(panel.index, 0)
+        self.assertEqual(animator.cube.snapshot(), initial)
+
     def test_application_button_opens_solver_without_changing_cube(self):
         import pygame
         from flat_rubik.app import run

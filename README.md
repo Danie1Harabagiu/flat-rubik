@@ -77,6 +77,9 @@ Se numără rotațiile de 90°: o rotație de 180° costă doi pași și apare c
 rotații distincte în plan. **Pas** / săgeata dreapta execută următoarea mutare,
 iar **Automat** redă planul la viteza selectată. În timpul redării, bara de jos
 lasă cubul vizibil; **Plan** revine la lista completă și la configurarea căutării.
+**Înapoi** sau săgeata stânga execută invers ultimul pas parcurs. Poți reveni
+până la poziția de început și reda din nou același plan, inclusiv după rezolvare.
+Dacă apeși Înapoi în timpul unei rotații, aceasta se termină și apoi este inversată.
 
 **Optim demonstrat** înseamnă că nu există o soluție cu mai puțini pași în
 această metrică. Dacă bugetul expiră înaintea demonstrației, se păstrează
