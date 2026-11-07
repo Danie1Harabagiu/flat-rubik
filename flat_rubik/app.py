@@ -20,6 +20,8 @@ from flat_rubik.session import SessionStore, SESSION_PATH
 from flat_rubik.solve_panel import SolvePanel
 from flat_rubik.flat_view import FIT_MODES, draw_flat, flat_pointer
 from flat_rubik.preferences import PreferencesStore
+from flat_rubik.camera_capture import CameraSession
+from flat_rubik.state import facelets
 
 
 def run(max_frames=None, session_path=SESSION_PATH):
@@ -53,6 +55,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
     if "puzzle45_duration" in preferences.present_keys:
         variant.set_duration(settings["puzzle45_duration"])
     animator = variant if settings["active_mode"] == "45" else classic
+    camera = CameraSession()
     solver = SolvePanel()
     solver.budget_text = f"{settings['search_budget']:g}"
     editor_view = None
@@ -103,6 +106,10 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     active_finger = None
                 event = pygame.event.Event(event_type, pos=(round(event.x * screen.get_width()),
                                                             round(event.y * screen.get_height())), button=1)
+            if camera.active and event.type != pygame.QUIT:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE or event.type == pygame.MOUSEBUTTONDOWN and camera.bridge is None:
+                    camera.close()
+                continue
             if solver.visible and event.type != pygame.QUIT:
                 if event.type == pygame.VIDEORESIZE and not fullscreen:
                     screen = pygame.display.set_mode((max(320, event.w), max(360, event.h)), pygame.RESIZABLE)
@@ -151,6 +158,9 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     if not editor.editing:
                         animator = variant if animator is classic else classic
                         paused, dragging, double = False, False, False
+                elif event.button == 1 and action == "camera":
+                    camera.start("editor")
+                    dragging, orbit = False, None
                 elif event.button == 1 and action == "edit":
                     animator = classic
                     if editor.editing:
@@ -283,11 +293,27 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     animator.set_duration(min(3.0, animator.duration + .2))
                 elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
                     animator.set_duration(max(.2, animator.duration - .2))
+        if solver.camera_requested:
+            solver.camera_requested = False
+            camera.start("solver")
+        scanned = camera.poll()
+        if scanned:
+            target, cube = scanned
+            animator = classic
+            editor.begin(cube)
+            editor.colors = facelets(cube)
+            classic.set_cube(editor.apply())
+            editor_view = None
+            paused, double = False, False
+            if target == "solver":
+                solver.open_panel()
+                solver.start(classic)
         if solver.visible and (solver.autoplay or solver.step_requested):
             paused = False
-        if not paused and not editor.editing:
+        if not paused and not editor.editing and not camera.active:
             animator.update(dt)
-        solver.update(classic)
+        if not camera.active:
+            solver.update(classic)
         session.save(classic, variant)
         save_preferences(force=not dragging and orbit is None)
         playing_solution = solver.visible and solver.docked
@@ -325,11 +351,13 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
         screen.blit(label, label.get_rect(center=view_button.center))
         if solver.visible:
             solver.draw(screen)
+        camera.draw(screen)
         pygame.display.flip()
         await asyncio.sleep(0)
         frames += 1
         if max_frames is not None and frames >= max_frames:
             running = False
+    camera.close()
     solver.close()
     session.save(classic, variant)
     save_preferences(force=True)

@@ -14,14 +14,15 @@ def solve_layout(size):
     panel = pygame.Rect(0, 0, min(744, w - 24), min(600, h - 24))
     panel.center = w / 2, h / 2
     x, y, width = panel.x + 12, panel.y + 12, panel.w - 24
-    half = (width - 8) // 2
+    half = (width - 16) // 3
     fourth = (width - 24) // 4
     return panel, {
         "minus": pygame.Rect(x, y + 52, 30, 30),
         "budget": pygame.Rect(x + 36, y + 52, 78, 30),
         "plus": pygame.Rect(x + 120, y + 52, 30, 30),
         "search": pygame.Rect(x, y + 94, half, 32),
-        "stop": pygame.Rect(x + half + 8, y + 94, half, 32),
+        "camera": pygame.Rect(x + half + 8, y + 94, half, 32),
+        "stop": pygame.Rect(x + 2 * (half + 8), y + 94, half, 32),
         "steps": pygame.Rect(x, y + 184, width, max(24, panel.h - 272)),
         "back": pygame.Rect(x, panel.bottom - 42, fourth, 30),
         "next": pygame.Rect(x + fourth + 8, panel.bottom - 42, fourth, 30),
@@ -42,6 +43,7 @@ class SolvePanel:
     def __init__(self, job=None):
         self.job = job if job is not None else SearchJob()
         self.visible = False
+        self.camera_requested = False
         self.budget_text = "30"
         self.budget_focused = False
         self.select_budget = False
@@ -170,6 +172,10 @@ class SolvePanel:
                 pygame.key.stop_text_input()
             if action == "close":
                 self.close()
+            elif action == "camera":
+                self.job.cancel()
+                self.autoplay = self.step_requested = False
+                self.camera_requested = True
             elif action == "search":
                 self.start(animator)
             elif action == "stop":
@@ -237,7 +243,7 @@ class SolvePanel:
         text("90° = 1 pas  |  180° = 2 pasi", (x, y + 28), 19)
         text("secunde", (x + 160, y + 59), 19)
         result = self.job.result
-        captions = {"minus": "-", "budget": self.budget_text, "plus": "+", "search": "Cauta",
+        captions = {"camera": "Camera", "minus": "-", "budget": self.budget_text, "plus": "+", "search": "Cauta",
                     "stop": "Opreste", "back": "Inapoi", "next": "Pas", "auto": "Pauza" if self.autoplay else "Automat", "close": "Inchide"}
         for name, caption in captions.items():
             rect = rects[name]

@@ -348,3 +348,21 @@ bucla aplicației pentru trei cadre, fără a deschide o fereastră vizibilă.
 Afișarea extinde zonele diagonale pentru un centru și piese mai pătrățoase.
 Aceeași transformare se aplică pieselor, contururilor și animațiilor; clicurile
 și editorul de culori urmăresc forma afișată.
+
+## Scanare cu camera
+
+Butonul **Camera** este disponibil langa **Culori** si in panoul **Rezolvare**.
+Porneste camera, apoi captureaza cele sase fete, respectand culoarea centrului
+si culoarea indicata SUS. Muta cubul intreg intre capturi, fara sa rotesti
+straturile. Aliniaza patratele in grila; foloseste lumina uniforma, fara reflexii.
+
+Detectia se calibreaza dupa cele sase centre. Verifica rezultatul: clic pe o
+casuta schimba culoarea. **Aplica configuratia** verifica inclusiv orientarea
+muchiilor, colturilor si paritatea. O stare imposibila ramane pentru corectare.
+Din Rezolvare, confirmarea porneste cautarea cu bugetul ales.
+
+In browser este necesar HTTPS sau localhost si permisiunea pentru camera.
+Pe desktop se deschide o fila locala de browser; configuratia revine in joc.
+Camera porneste numai dupa apasarea butonului de pornire si se opreste dupa
+capturi sau anulare. Imaginile sunt procesate local, nu sunt incarcate pe server
+si nu sunt salvate. Recunoasterea poate necesita corectii in lumina dificila.
