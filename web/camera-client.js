@@ -3,7 +3,7 @@
   const order = 'FRBLUD', names = {F:'rosu',R:'verde',B:'portocaliu',L:'albastru',U:'galben',D:'alb'};
   const top = {F:'galben',R:'galben',B:'galben',L:'galben',U:'portocaliu',D:'rosu'};
   const palette = {rosu:'#e33333',verde:'#18ae50',portocaliu:'#ff9200',albastru:'#298de0',galben:'#ffe000',alb:'#ffffff'};
-  let root, video, stream, samples, grids, events=[], generation=0, observer;
+  let root, video, stream, samples, grids, events=[], generation=0, observer, mirrored=true, facing='user';
   const stop = () => { if(observer)observer.disconnect(); observer=null; if(stream) stream.getTracks().forEach(t=>t.stop()); stream=null; };
   const button = (label, action, parent=root) => {const b=document.createElement('button'); b.textContent=label; b.onclick=action; b.style.cssText='padding:12px;margin:5px;border-radius:8px;border:1px solid #87639d;background:white;color:#291b34;cursor:pointer'; parent.append(b); return b;};
   const message = text => {root.querySelector('[data-message]').textContent=text;};
@@ -42,6 +42,7 @@
   function capture() {
     if(!video.videoWidth) {message('Asteapta imaginea camerei.');return;}
     const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+    // CSS mirrors the preview only; samples keep the physical face orientation.
     const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(video,0,0);
     const side=Math.min(canvas.width,canvas.height)*.72, left=(canvas.width-side)/2, upper=(canvas.height-side)/2, patch=Math.max(2,Math.floor(side/18));
     const face=order[Object.keys(samples).length];samples[face]=Array.from({length:9},(_,i)=>{
@@ -55,15 +56,23 @@
     const token=++generation;stop();samples={};shell();message('Cer permisiunea pentru camera...');button('Renunta',cancel);
     try {
       if(!navigator.mediaDevices?.getUserMedia)throw new Error('Camera necesita HTTPS sau localhost si un browser compatibil.');
-      const acquired=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+      const acquired=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:720}},audio:false});
       if(token!==generation){acquired.getTracks().forEach(t=>t.stop());return;}
       stream=acquired;shell();const stage=document.createElement('div');stage.style.cssText='position:relative;width:min(100%,540px);margin:auto';root.append(stage);
-      video=document.createElement('video');video.muted=true;video.playsInline=true;video.style.cssText='display:block;width:100%';video.srcObject=stream;stage.append(video);await video.play();
+      video=document.createElement('video');video.muted=true;video.playsInline=true;video.style.cssText='display:block;width:100%';video.style.transform=mirrored?'scaleX(-1)':'none';video.srcObject=stream;stage.append(video);await video.play();
       if(token!==generation)return;
       const overlay=document.createElement('div');overlay.style.cssText='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;grid-template-columns:repeat(3,1fr);pointer-events:none';stage.append(overlay);
       const resize=()=>{const side=Math.min(video.clientWidth,video.clientHeight)*.72;overlay.style.width=side+'px';overlay.style.height=side+'px';};
       for(let i=0;i<9;i++){const cell=document.createElement('div');cell.style.cssText='border:1px solid white;box-shadow:inset 0 0 0 1px #2228';overlay.append(cell);}
       video.onresize=resize;observer=new ResizeObserver(resize);observer.observe(video);resize();
+      const mirrorLabel=document.createElement('label');mirrorLabel.style.cssText='display:block;margin:12px';
+      const mirrorToggle=document.createElement('input');mirrorToggle.type='checkbox';mirrorToggle.checked=mirrored;
+      mirrorToggle.onchange=()=>{mirrored=mirrorToggle.checked;video.style.transform=mirrored?'scaleX(-1)':'none';};
+      mirrorLabel.append(mirrorToggle,document.createTextNode(' Oglinda'));root.append(mirrorLabel);
+      button(facing==='user'?'Camera: frontala':'Camera: spate',()=>{
+        if(Object.keys(samples).length && !window.confirm('Schimbarea camerei reia cele sase capturi. Continui?'))return;
+        facing=facing==='user'?'environment':'user';start();
+      });
       button('Captureaza fata',capture);button('Renunta',cancel);guide();
     } catch(e) {if(token!==generation)return;stop();shell();message('Camera nu a pornit: '+e.message);button('Reincearca',start);button('Renunta',cancel);}
   }
