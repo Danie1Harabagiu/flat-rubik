@@ -1,13 +1,13 @@
 
 import math
 
-SPOKE_HALF_ANGLE = math.radians(18)
+SPOKE_HALF_ANGLE = math.radians(22.25)  # half-degree separation between adjacent pieces
 # Shared by static slots, animated layers, face guides, and mouse hit testing.
 RED_RADIUS = 44
 # A wider central opening gives the inner ends of the pieces a broader edge.
-INNER_RADII = (50, 88, 126)  # inside edge, colored seam, outside edge
-MIDDLE_RADII = (133, 202)
-OUTER_RADII = (209, 246, 292)
+INNER_RADII = (46, 88, 129)  # inside edge, colored seam, outside edge
+MIDDLE_RADII = (131, 205)
+OUTER_RADII = (207, 246, 298)
 ORANGE_RADII = (300, 330)
 
 

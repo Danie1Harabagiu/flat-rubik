@@ -10,10 +10,12 @@ import math
 
 from flat_rubik.cube import FACE_NORMALS, parse_move
 from flat_rubik.projection import mobile_shapes, cubie_polygon
-from flat_rubik.geometry import INNER_RADII, MIDDLE_RADII, OUTER_RADII
+from flat_rubik.geometry import INNER_RADII, MIDDLE_RADII, OUTER_RADII, SPOKE_HALF_ANGLE
 
 GRID = (-1.5, -1.45, -1, -.55, -.45, 0, .45, .55, 1, 1.45, 1.5)
-ANGLES = (-66, -63, -45, -27, -18, 0, 18, 27, 45, 63, 66)
+_HALF = math.degrees(SPOKE_HALF_ANGLE)
+ANGLES = (-68, -45 - _HALF, -45, -45 + _HALF, -_HALF, 0,
+          _HALF, 45 - _HALF, 45, 45 + _HALF, 68)
 RADII = (INNER_RADII[0] - 4, *INNER_RADII, MIDDLE_RADII[0], sum(MIDDLE_RADII) / 2,
          MIDDLE_RADII[1], *OUTER_RADII, OUTER_RADII[-1] + 4)
 

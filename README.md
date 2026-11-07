@@ -55,10 +55,49 @@ Repository-ul trebuie să permită GitHub Pages pentru planul folosit;
 pentru GitHub Free, folosește un repository public.
 Salvările personale nu sunt incluse în pachetul publicat.
 
+## Proporțiile desenului Flat Rubik
+
+Butonul **Forma** sau tasta **T** schimbă între patru opțiuni:
+**1:1** păstrează proporțiile, **Lat** lărgește desenul cu 40%, **Înalt** îl
+alungește cu 40%, iar **X/Y** adaptează independent lățimea și înălțimea la
+spațiul disponibil în fereastră. Aceste opțiuni afectează exclusiv desenul
+Flat Rubik. Cubul 3D își păstrează proporțiile și dimensiunea zonei sale.
+Clicurile, săgețile și editorul de culori urmăresc aceeași transformare.
+Contururile, suprafețele și săgețile sunt desenate direct la rezoluția finală,
+prin transformarea coordonatelor; nu se mărește o imagine de rezoluție mică.
+
+## Rezolvare și buget de căutare
+
+Apasă **Rezolvare** sau **S** pentru cubul clasic de 90°. Introdu bugetul în
+secunde (1–3600, implicit 30), apoi apasă **Caută**. Timpul include pregătirea
+motorului și căutarea; **Oprește** permite întreruperea mai devreme.
+
+Se numără rotațiile de 90°: o rotație de 180° costă doi pași și apare ca două
+rotații distincte în plan. **Pas** / săgeata dreapta execută următoarea mutare,
+iar **Automat** redă planul la viteza selectată. În timpul redării, bara de jos
+lasă cubul vizibil; **Plan** revine la lista completă și la configurarea căutării.
+
+**Optim demonstrat** înseamnă că nu există o soluție cu mai puțini pași în
+această metrică. Dacă bugetul expiră înaintea demonstrației, se păstrează
+cea mai scurtă soluție verificată dintre cele găsite și se precizează că
+optimul nu este demonstrat. Un buget prea mic poate expira și fără soluție;
+poți relua cu mai mult timp. Căutarea exactă a cuburilor foarte amestecate
+poate necesita mult timp: bugetul nu garantează demonstrarea optimului.
+
+Pe desktop, un proces separat permite oprirea calculului la expirarea
+bugetului fără blocarea interfeței. Motorul în două faze din
+[rubik-solver-py](https://github.com/mrrtmob/rubik-solver-py) oferă candidați,
+verificați și numărați în rotații de 90°; algoritmul propriu de căutare exactă
+este cel care certifică minimul. Prima utilizare poate consuma o parte
+semnificativă din buget pentru pregătire; datele se păstrează local în
+`.solver_cache/`, ignorat de Git. Instalează dependențele din `requirements.txt`.
+În browser, căutarea exactă rulează în porții scurte, iar un istoric verificat
+poate furniza o soluție inițială; motorul desktop în două faze nu este încărcat.
+
 ## Alegerea modului: Rubik 90° sau Puzzle 45°
 
 Aplicația pornește implicit în **Rubik 90°**, cu mecanica cubului fizic.
-Butonul **Mod: Rubik 90° | schimbă** comută la **Puzzle 45°** și invers.
+Butonul **Mod: 90°** comută la **Puzzle 45°** și invers.
 Cele două jocuri au stări separate; schimbarea modului nu resetează pozițiile.
 
 În **Puzzle 45°**, fiecare clic deplasează cele opt piese ale feței cu o
@@ -207,11 +246,11 @@ intervale de 45°, cu piese separate prin spații pe fundal mov. Imaginea fără
 stabilește contururile, iar imaginea cu marcaje arată delimitarea fețelor.
 Marcajele colorate trasate de mână nu fac parte din contururile pieselor.
 
-Centrul roșu are raza de bază 44, iar piesele interioare încep la raza 50,
+Centrul roșu are raza de bază 44, iar piesele interioare încep la raza 46,
 pentru laturi mai late spre centru. Inelul portocaliu ocupă razele 300–330, mai îngust
 pentru a reduce greutatea vizuală a exteriorului.
 Centrele laterale ocupă pozițiile cardinale ale rândului mijlociu,
-între razele 133–202, cu deschidere de 36°. Galbenul este sus, verdele în
+între razele 131–205, cu deschidere de 44,5°. Galbenul este sus, verdele în
 dreapta, albul jos și albastrul în stânga, conform fotografiei.
 
 Fiecare cubuleț mobil ocupă o singură regiune compusă: două culori pentru
@@ -220,11 +259,11 @@ centru; la exterior, portocaliul ocupă partea apropiată de inel. La colțuri
 și la muchiile diagonale, culorile laterale împart lățimea regiunii. Cele
 48 de suprafețe mobile aparțin celor 20 de cubulețe mobile.
 
-La dimensiunea 800×800, rândurile mobile ocupă razele 50–126, 133–202 și
-209–292. Rândul interior este cu aproximativ 28% mai lat radial decât în
-varianta anterioară, iar cel exterior cu aproximativ 26% mai îngust.
-Spațiile radiale au fost reduse la 6–8 pixeli, iar cele unghiulare
-la 9°, conform preferinței utilizatorului pentru piese mai apropiate.
+La dimensiunea 800×800, rândurile mobile ocupă razele 46–129, 131–205 și
+207–298. Spațiile radiale sunt de 2 pixeli, inclusiv lângă centrul roșu și
+inelul exterior. Între piesele vecine rămân doar 0,5°: piesele aproape se ating,
+iar conturul fin le păstrează distincte. Aceleași dimensiuni se folosesc în
+animații, pentru a păstra continuitatea la începutul și sfârșitul mutării.
 Separarea roșu/lateral este la raza 88, iar separarea
 lateral/portocaliu la 246. **Proporțiile pornesc de la fotografii și sunt
 ajustate după preferințele utilizatorului, nu măsurători exacte.**

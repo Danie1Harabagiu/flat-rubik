@@ -8,7 +8,7 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
 from flat_rubik.animation import Animator
 from flat_rubik.cube import Cube
-from flat_rubik.geometry import geometrie_centre
+from flat_rubik.geometry import geometrie_centre, MIDDLE_RADII
 from flat_rubik.layer_motion import layer_shapes
 from flat_rubik.projection import mobile_shapes, project, slot_polygon
 
@@ -38,8 +38,8 @@ class DisplayTests(unittest.TestCase):
             self.assertEqual(centers[color]["tip"], "poligon")
             points = centers[color]["puncte"]
             radii = [math.dist(p, (400, 400)) for p in points]
-            self.assertAlmostEqual(min(radii), 133, delta=1)
-            self.assertAlmostEqual(max(radii), 202, delta=1)
+            self.assertAlmostEqual(min(radii), MIDDLE_RADII[0], delta=1)
+            self.assertAlmostEqual(max(radii), MIDDLE_RADII[1], delta=1)
 
     def test_reference_cubies_share_boundaries(self):
         # Every physical mobile piece has one connected footprint, rather

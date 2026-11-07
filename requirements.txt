@@ -1,1 +1,2 @@
 pygame==2.6.1
+rubik-solver-py==0.1.1

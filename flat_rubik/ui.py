@@ -4,6 +4,7 @@ from collections import Counter
 
 from flat_rubik.cube import FACE_COLORS
 from flat_rubik.renderer import CULORI_RGB, text_surface, draw_rotation_arrow
+from flat_rubik.flat_view import FIT_LABELS
 
 TEXT = (43, 31, 61)
 PANEL = (235, 224, 245)
@@ -29,6 +30,10 @@ def layout(size, controls_visible=True):
         actions.update(edit=pygame.Rect(w - 188, y - 3, 82, 32),
                        shuffle=pygame.Rect(w - 98, y - 3, 82, 32),
                        mode=pygame.Rect(x, y + 266, usable, 36))
+        mode = actions["mode"]
+        mode.w = (usable - 12) // 3
+        actions["fit"] = pygame.Rect(mode.right + 6, mode.y, mode.w, mode.h)
+        actions["solve"] = pygame.Rect(actions["fit"].right + 6, mode.y, usable - 2 * mode.w - 12, mode.h)
         return board, panel, buttons, slider, actions, True
     if w >= 960 and h >= 780:
         board = pygame.Rect(0, 0, w - 280, h)
@@ -63,6 +68,10 @@ def layout(size, controls_visible=True):
         actions["edit"] = pygame.Rect(x, y + 503, usable, 36)
         actions["shuffle"] = pygame.Rect(x, y + 549, usable, 36)
         actions["mode"] = pygame.Rect(x, y + 79, usable, 22)
+    mode = actions["mode"]
+    mode.w = (usable - 12) // 3
+    actions["fit"] = pygame.Rect(mode.right + 6, mode.y, mode.w, mode.h)
+    actions["solve"] = pygame.Rect(actions["fit"].right + 6, mode.y, usable - 2 * mode.w - 12, mode.h)
     return board, panel, buttons, slider, actions, compact
 
 
@@ -82,7 +91,7 @@ def duration_at(x, slider):
     return MIN_DURATION + fraction * (MAX_DURATION - MIN_DURATION)
 
 
-def render_controls(screen, animator, paused, paths, hovered=None, editor=None, session_message=None):
+def render_controls(screen, animator, paused, paths, hovered=None, editor=None, session_message=None, fit_mode="proportional"):
     board, panel, buttons, slider, actions, compact = layout(screen.get_size())
     touch_layout = screen.get_width() < 600 and screen.get_height() >= 600
     pygame.draw.rect(screen, PANEL, panel)
@@ -154,7 +163,8 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
     captions = {"pause": "Continua" if paused else "Pauza",
                 "paths": "Trasee: DA" if paths else "Trasee: NU", "reset": "Resetare",
                 "edit": "Rubik: culori" if variant else "Culori", "shuffle": "Amesteca",
-                "mode": "Mod: Puzzle 45°  |  schimba" if variant else "Mod: Rubik 90°  |  schimba"}
+                "mode": "Mod: 45°" if variant else "Mod: 90°", "solve": "Rubik: rezolva" if variant else "Rezolvare",
+                "fit": FIT_LABELS[fit_mode]}
     if editing:
         captions.update(pause="Aplica", paths="Anuleaza", reset="Rezolvat", edit="Renunta", shuffle="Random valid")
     for name, rect in actions.items():

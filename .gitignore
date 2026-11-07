@@ -13,3 +13,4 @@ cube_colors.json
 cube_colors.tmp
 puzzle_session.json
 puzzle_session.tmp
+.solver_cache/

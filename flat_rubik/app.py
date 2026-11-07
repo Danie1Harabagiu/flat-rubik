@@ -9,14 +9,16 @@ from copy import deepcopy
 from flat_rubik.animation import Animator
 from flat_rubik.cube import scramble, FACE_COLORS
 from flat_rubik.controls import move_for_click
-from flat_rubik.geometry import center_at, board_point
-from flat_rubik.renderer import draw, BACKGROUND_RGB, text_surface
+from flat_rubik.geometry import center_at
+from flat_rubik.renderer import BACKGROUND_RGB, text_surface
 from flat_rubik.cube_view import draw_cube, view_regions, cube_face_at
 from flat_rubik.ui import (layout, duration_at, render_controls,
                            visibility_button, render_visibility_button)
 from flat_rubik.editor import ColorEditor
 from flat_rubik.puzzle45 import Puzzle45
 from flat_rubik.session import SessionStore, SESSION_PATH
+from flat_rubik.solve_panel import SolvePanel
+from flat_rubik.flat_view import FIT_MODES, draw_flat, flat_pointer
 
 
 def run(max_frames=None, session_path=SESSION_PATH):
@@ -42,12 +44,14 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
     variant = Puzzle45(duration=1.0)
     session = SessionStore(session_path)
     session.restore(classic, variant)
+    solver = SolvePanel()
     editor_view = None
     running, paused, paths, dragging, double = True, False, False, False, False
     frames = 0
     active_finger = None
     controls_visible, fullscreen = True, False
     view_mode = "Ambele"
+    fit_mode = "proportional"
     yaw, pitch = -.55, .45
     orbit = None
     windowed_size = size
@@ -73,6 +77,12 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     active_finger = None
                 event = pygame.event.Event(event_type, pos=(round(event.x * screen.get_width()),
                                                             round(event.y * screen.get_height())), button=1)
+            if solver.visible and event.type != pygame.QUIT:
+                if event.type == pygame.VIDEORESIZE and not fullscreen:
+                    screen = pygame.display.set_mode((max(320, event.w), max(360, event.h)), pygame.RESIZABLE)
+                else:
+                    solver.handle(event, classic, screen.get_size())
+                continue
             board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible)
             view_button = pygame.Rect(180, 8, max(1, min(200, screen.get_width() - 188)), 30)
             area = board.copy()
@@ -102,7 +112,14 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                         orbit = dict(start=event.pos, last=event.pos, moved=False, face=face)
                     continue
                 action = next((name for name, rect in actions.items() if rect.collidepoint(event.pos)), None)
-                if event.button == 1 and action == "mode":
+                if event.button == 1 and action == "fit":
+                    fit_mode = FIT_MODES[(FIT_MODES.index(fit_mode) + 1) % len(FIT_MODES)]
+                elif event.button == 1 and action == "solve":
+                    if not editor.editing:
+                        animator = classic
+                        solver.open_panel()
+                        dragging, orbit = False, None
+                elif event.button == 1 and action == "mode":
                     if not editor.editing:
                         animator = variant if animator is classic else classic
                         paused, dragging, double = False, False, False
@@ -117,8 +134,10 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     dragging = False
                 elif editor.editing:
                     if board.collidepoint(event.pos):
-                        local = board_point((event.pos[0] - board.x, event.pos[1] - board.y), *board.size, inverse=True)
-                        editor.paint(local, event.button, board.size)
+                        mapped = flat_pointer((event.pos[0] - board.x, event.pos[1] - board.y), board.size, fit_mode)
+                        if mapped:
+                            local, virtual = mapped
+                            editor.paint(local, event.button, virtual)
                     elif event.button == 1 and action == "pause":
                         cube = editor.apply()
                         if cube is not None:
@@ -150,8 +169,8 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     move = face + ("'" if inverse else "") if face else None
                     if board.collidepoint(event.pos):
                         local = (event.pos[0] - board.x, event.pos[1] - board.y)
-                        local = board_point(local, *board.size, inverse=True)
-                        move = move_for_click(local, event.button, board.size)
+                        mapped = flat_pointer(local, board.size, fit_mode)
+                        move = move_for_click(mapped[0], event.button, mapped[1]) if mapped else None
                     if move:
                         animator.enqueue([move])
             elif event.type == pygame.MOUSEMOTION and orbit is not None:
@@ -172,7 +191,13 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                 orbit = None
             elif event.type == pygame.KEYDOWN:
                 key = pygame.key.name(event.key).upper()
-                if event.key == pygame.K_v:
+                if event.key == pygame.K_t:
+                    fit_mode = FIT_MODES[(FIT_MODES.index(fit_mode) + 1) % len(FIT_MODES)]
+                elif event.key == pygame.K_s and not editor.editing:
+                    animator = classic
+                    solver.open_panel()
+                    dragging, orbit = False, None
+                elif event.key == pygame.K_v:
                     view_mode = {"Cerc": "Cub", "Cub": "Ambele", "Ambele": "Cerc"}[view_mode]
                     orbit = None
                 elif event.key == pygame.K_h:
@@ -230,40 +255,51 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     animator.set_duration(min(3.0, animator.duration + .2))
                 elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
                     animator.set_duration(max(.2, animator.duration - .2))
+        if solver.visible and (solver.autoplay or solver.step_requested):
+            paused = False
         if not paused and not editor.editing:
             animator.update(dt)
+        solver.update(classic)
         session.save(classic, variant)
-        board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible)
+        playing_solution = solver.visible and solver.docked
+        board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible and not playing_solution)
         area = board.copy()
         area.y += 46
         area.h = max(1, area.h - 46)
+        if solver.visible and solver.docked:
+            area.h = max(1, area.h - 114)
         board, cube_rect = view_regions(area, "Cerc" if animator is variant or editor.editing else view_mode)
         mouse = pygame.mouse.get_pos()
         hovered = next((f for f, rect in buttons.items() if rect.collidepoint(mouse)), None)
         if board.collidepoint(mouse):
-            local = board_point((mouse[0] - board.x, mouse[1] - board.y), *board.size, inverse=True)
-            color = center_at(local, *board.size)
+            mapped = flat_pointer((mouse[0] - board.x, mouse[1] - board.y), board.size, fit_mode)
+            color = center_at(mapped[0], *mapped[1]) if mapped else None
             hovered = next((f for f, c in FACE_COLORS.items() if c == color), None)
+        if solver.visible:
+            hovered = None
         screen.fill(BACKGROUND_RGB)
         if board.w and board.h:
             board_screen = screen.subsurface(board)
-            draw(board_screen, animator=editor_view if editor.editing else animator,
+            draw_flat(board_screen, mode=fit_mode, animator=editor_view if editor.editing else animator,
                  hovered=None if editor.editing else hovered, show_paths=paths and not editor.editing,
                  facelets=editor.colors if editor.editing else None)
         if cube_rect.w and cube_rect.h:
             draw_cube(screen.subsurface(cube_rect), animator, yaw, pitch)
-        if controls_visible:
-            render_controls(screen, animator, paused, paths, hovered, editor=editor, session_message=session.message)
+        if controls_visible and not playing_solution:
+            render_controls(screen, animator, paused, paths, hovered, editor=editor, session_message=session.message, fit_mode=fit_mode)
         render_visibility_button(screen, controls_visible)
         view_button = pygame.Rect(180, 8, max(1, min(200, screen.get_width() - 188)), 30)
         pygame.draw.rect(screen, (235, 224, 245), view_button, border_radius=7)
         caption = "45 grade: Cerc" if animator is variant else "Editor: Cerc" if editor.editing else "Vedere: " + view_mode + " [V]"
         label = text_surface(caption, 19, (43, 31, 61))
         screen.blit(label, label.get_rect(center=view_button.center))
+        if solver.visible:
+            solver.draw(screen)
         pygame.display.flip()
         await asyncio.sleep(0)
         frames += 1
         if max_frames is not None and frames >= max_frames:
             running = False
+    solver.close()
     session.save(classic, variant)
     pygame.quit()
