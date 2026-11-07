@@ -40,6 +40,21 @@ browser version** verifică jocul și produce arhiva `flat-rubik-web` la push;
 publicarea Sites este separată. Șablonul web este adaptat din
 [Pygbag 0.9.3](https://github.com/pygame-web/pygbag), sub licență MIT.
 
+## Publicare pe GitHub Pages
+
+În repository-ul `Danie1Harabagiu/flat-rubik`, deschide **Settings → Pages**
+și alege **GitHub Actions** la **Build and deployment → Source**.
+Trimite modificările pe ramura `main`. Workflow-ul **Build and publish phone
+browser version** verifică jocul, construiește versiunea web și o publică.
+Poate fi pornit și manual din fila **Actions**, prin **Run workflow**.
+
+După prima publicare reușită, linkul de trimis testerilor este:
+<https://danie1harabagiu.github.io/flat-rubik/>.
+Jocul se deschide în browser, fără Python sau cont ChatGPT.
+Repository-ul trebuie să permită GitHub Pages pentru planul folosit;
+pentru GitHub Free, folosește un repository public.
+Salvările personale nu sunt incluse în pachetul publicat.
+
 ## Alegerea modului: Rubik 90° sau Puzzle 45°
 
 Aplicația pornește implicit în **Rubik 90°**, cu mecanica cubului fizic.
