@@ -10,9 +10,11 @@ from flat_rubik.geometry import center_at
 from flat_rubik.renderer import draw, BACKGROUND_RGB
 from flat_rubik.ui import layout, duration_at, render_controls
 from flat_rubik.editor import ColorEditor
+from flat_rubik.puzzle45 import Puzzle45
+from flat_rubik.session import SessionStore, SESSION_PATH
 
 
-def run(max_frames=None):
+def run(max_frames=None, session_path=SESSION_PATH):
     pygame.init()
     screen = pygame.display.set_mode((1080, 800), pygame.RESIZABLE)
     pygame.display.set_caption("Flat Rubik")
@@ -21,6 +23,10 @@ def run(max_frames=None):
     editor = ColorEditor(Path(__file__).resolve().parent.parent / "cube_colors.json")
     if editor.startup_cube is not None:
         animator.set_cube(editor.startup_cube)
+    classic = animator
+    variant = Puzzle45(duration=1.0)
+    session = SessionStore(session_path)
+    session.restore(classic, variant)
     editor_view = None
     running, paused, paths, dragging, double = True, False, False, False, False
     frames = 0
@@ -34,7 +40,12 @@ def run(max_frames=None):
                 screen = pygame.display.set_mode((max(320, event.w), max(360, event.h)), pygame.RESIZABLE)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 action = next((name for name, rect in actions.items() if rect.collidepoint(event.pos)), None)
-                if event.button == 1 and action == "edit":
+                if event.button == 1 and action == "mode":
+                    if not editor.editing:
+                        animator = variant if animator is classic else classic
+                        paused, dragging, double = False, False, False
+                elif event.button == 1 and action == "edit":
+                    animator = classic
                     if editor.editing:
                         editor.cancel()
                         editor_view = None
@@ -85,6 +96,7 @@ def run(max_frames=None):
             elif event.type == pygame.KEYDOWN:
                 key = pygame.key.name(event.key).upper()
                 if event.key == pygame.K_e or editor.editing and event.key == pygame.K_ESCAPE:
+                    animator = classic
                     if editor.editing:
                         editor.cancel()
                         editor_view = None
@@ -107,6 +119,8 @@ def run(max_frames=None):
                     running = False
                 elif key in ("R", "L", "U", "D", "F", "B"):
                     suffix = "2" if double or event.mod & pygame.KMOD_CTRL else "'" if event.mod & pygame.KMOD_SHIFT else ""
+                    if animator is variant and suffix == "2" and event.mod & pygame.KMOD_SHIFT:
+                        suffix = "2'"
                     animator.enqueue([key + suffix])
                     double = False
                 elif event.key == pygame.K_2:
@@ -124,6 +138,7 @@ def run(max_frames=None):
                     animator.set_duration(max(.2, animator.duration - .2))
         if not paused and not editor.editing:
             animator.update(dt)
+        session.save(classic, variant)
         board, panel, buttons, slider, actions, compact = layout(screen.get_size())
         mouse = pygame.mouse.get_pos()
         hovered = next((f for f, rect in buttons.items() if rect.collidepoint(mouse)), None)
@@ -135,9 +150,10 @@ def run(max_frames=None):
         draw(board_screen, animator=editor_view if editor.editing else animator,
              hovered=None if editor.editing else hovered, show_paths=paths and not editor.editing,
              facelets=editor.colors if editor.editing else None)
-        render_controls(screen, animator, paused, paths, hovered, editor=editor)
+        render_controls(screen, animator, paused, paths, hovered, editor=editor, session_message=session.message)
         pygame.display.flip()
         frames += 1
         if max_frames is not None and frames >= max_frames:
             running = False
+    session.save(classic, variant)
     pygame.quit()

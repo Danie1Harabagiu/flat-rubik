@@ -37,7 +37,9 @@ def draw_zones(screen, selected=None):
     angles = {"U": -math.pi / 2, "R": 0, "D": math.pi / 2, "L": math.pi}
     for face, color in FACE_COLORS.items():
         rgb = CULORI_RGB[color]
-        fill = (*rgb, 48 if face == selected else 22)
+        # Color the fixed positions, independently of the scrambled cubies.
+        # Stickers are drawn opaquely over this layer, leaving their colors intact.
+        fill = (*rgb, 170 if face == selected else 135)
         edge = (*tuple(round(c * .65) for c in rgb), 230)
         thickness = max(1, round((4 if face == selected else 2) * scale))
         if face == "F":
@@ -62,7 +64,9 @@ def draw_routes(screen, animator):
     """One source-to-destination path per cubie, not one per colored sticker."""
     width, height = screen.get_size()
     layer = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-    for points in layer_paths(animator.cube, animator.current, width, height):
+    paths = (animator.routes(width, height) if hasattr(animator, "routes") else
+             layer_paths(animator.cube, animator.current, width, height))
+    for points in paths:
         a, b = points[0], points[-1]
         for i in range(0, 40, 3):
             pygame.draw.line(layer, (45, 28, 65, 160), points[i], points[min(40, i + 1)], 2)
@@ -90,7 +94,8 @@ def draw(ecran, timp=0, animator=None, hovered=None, show_paths=False, facelets=
         shapes = (animator.shapes(latime, inaltime) if facelets is None else
                   {(p, n): (facelets[p, n], points) for p, n, points in slot_regions(latime, inaltime)})
         outlines = animator.outlines(latime, inaltime)
-        highlighted = {c.id for c in moving_cubies(animator.cube, selected)} if selected else set()
+        highlighted = ((animator.highlighted_cubies(selected) if hasattr(animator, "highlighted_cubies") else
+                        {c.id for c in moving_cubies(animator.cube, selected)}) if selected else set())
         halo_width = outline_width + max(2, round(4 * scale))
         # Highlight complete physical cubies, including their side colors.
         # Draw the halo underneath the original, opaque colored surfaces.

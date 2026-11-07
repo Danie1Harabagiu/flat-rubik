@@ -11,6 +11,35 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
+## Alegerea modului: Rubik 90° sau Puzzle 45°
+
+Aplicația pornește implicit în **Rubik 90°**, cu mecanica cubului fizic.
+Butonul **Mod: Rubik 90° | schimbă** comută la **Puzzle 45°** și invers.
+Cele două jocuri au stări separate; schimbarea modului nu resetează pozițiile.
+
+În **Puzzle 45°**, fiecare clic deplasează cele opt piese ale feței cu o
+poziție în ciclul de opt locuri. Clic dreapta inversează mutarea. Poți roti
+imediat oricare altă față, fără aliniere suplimentară. Muchiile și colțurile
+pot schimba locurile între ele: fiecare piesă își păstrează identitatea,
+cele două sau trei culori și ordinea lor, iar forma se adaptează poziției.
+La rotațiile laterale, orientarea partiției colorate avansează tot cu 45°.
+Centrele rămân fixe. Opt pași pe aceeași față refac pozițiile și orientările.
+Acesta este un puzzle nou, cu reguli diferite de cubul Rubik fizic.
+
+Tastele fețelor folosesc pasul modului activ. **Ctrl + față** face doi pași;
+în modul de 45°, **Ctrl + Shift + față** face doi pași în sens invers.
+Amestecarea și resetarea acționează asupra modului activ. Editorul **Culori**
+lucrează cu modul Rubik; în modul nou, butonul **Rubik: culori** te duce acolo.
+
+## Salvarea automată a pozițiilor
+
+După fiecare mutare terminată, aplicația salvează automat ambele jocuri în
+`puzzle_session.json`, separat de configurația manuală din `cube_colors.json`.
+La următoarea deschidere restaurează pozițiile și vitezele, pornind în Rubik.
+Pentru a continua varianta de 45°, apasă butonul de mod.
+O animație în curs și mutările încă în coadă nu sunt salvate: se păstrează
+ultima poziție completă. Fișierul sesiunii este local și ignorat de Git.
+
 ## Comenzi
 
 | Tastă | Acțiune |

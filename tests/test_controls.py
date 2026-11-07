@@ -49,7 +49,7 @@ class MouseControlsTests(unittest.TestCase):
                 expected.append(face + ("'" if button == 3 else ""))
         events.append(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(0, 0), button=1))
         with patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):
-            run(max_frames=1)
+            run(max_frames=1, session_path=None)
         self.assertEqual([animator.current] + list(animator.queue), expected)
         animator.update(4)
         self.assertEqual(animator.cube.snapshot(), Cube().snapshot())

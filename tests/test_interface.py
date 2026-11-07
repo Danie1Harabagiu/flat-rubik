@@ -84,7 +84,7 @@ class InterfaceTests(unittest.TestCase):
                   pygame.event.Event(pygame.MOUSEBUTTONUP, pos=slider.midright, button=1),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["pause"].center, button=1)]
         with patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", side_effect=[events, []]):
-            run(max_frames=2)
+            run(max_frames=2, session_path=None)
         self.assertEqual(animator.duration, 3.0)
         self.assertAlmostEqual(animator.elapsed / animator.duration, .4)
         self.assertEqual(animator.current, "U")

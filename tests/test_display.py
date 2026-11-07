@@ -120,7 +120,7 @@ class DisplayTests(unittest.TestCase):
             red_sample = (size[0] // 2 + round(22 * min(size) / 800), size[1] // 2)
             self.assertEqual(tuple(screen.get_at(red_sample))[:3], CULORI_RGB["rosu"])
         pygame.quit()
-        run(max_frames=3)
+        run(max_frames=3, session_path=None)
 
 
 if __name__ == "__main__":

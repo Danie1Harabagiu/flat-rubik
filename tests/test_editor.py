@@ -182,7 +182,7 @@ class EditorTests(unittest.TestCase):
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=point, button=1),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["pause"].center, button=1)]
         with patch("flat_rubik.app.ColorEditor", return_value=editor), patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):
-            run(max_frames=1)
+            run(max_frames=1, session_path=None)
         self.assertTrue(editor.editing)
         self.assertTrue(editor.error)
         self.assertEqual(animator.cube.snapshot(), before)
@@ -221,7 +221,7 @@ class EditorTests(unittest.TestCase):
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["pause"].center, button=1),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(400, 400), button=1)]
         with patch("flat_rubik.app.ColorEditor", return_value=editor), patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):
-            run(max_frames=1)
+            run(max_frames=1, session_path=None)
         self.assertFalse(editor.editing)
         self.assertEqual(animator.cube.snapshot(), target.snapshot())
         animator.update(1)
