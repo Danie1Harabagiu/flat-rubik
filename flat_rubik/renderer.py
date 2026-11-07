@@ -30,8 +30,45 @@ def text_surface(text, size, color):
 
 
 def board_polygon(screen, color, points, width=0, transform=None):
-    pygame.draw.polygon(screen, color,
-                        [transform(p) if transform else board_point(p, *screen.get_size()) for p in points], width)
+    points = [transform(p) if transform else board_point(p, *screen.get_size()) for p in points]
+    if not width:
+        pygame.draw.polygon(screen, color, points)
+        return
+    for quad in _stroke_quads(tuple(points), width):
+        pygame.draw.polygon(screen, color, quad)
+
+
+@lru_cache(maxsize=256)
+def _stroke_quads(points, width):
+    # Build the stroke AFTER projection, with perpendicular offsets in pixels.
+    # SDL polygon borders measure thickness along X/Y, making diagonals thinner.
+    vertices = []
+    for point in points:
+        vector = pygame.Vector2(point)
+        if not vertices or vector.distance_squared_to(vertices[-1]) > 1e-12:
+            vertices.append(vector)
+    if len(vertices) > 1 and vertices[0].distance_squared_to(vertices[-1]) < 1e-12:
+        vertices.pop()
+    if len(vertices) < 3:
+        return ()
+    normals = []
+    for i, point in enumerate(vertices):
+        direction = vertices[(i + 1) % len(vertices)] - point
+        normals.append(direction.normalize().rotate(90))
+    offsets = []
+    for i, normal in enumerate(normals):
+        joint = normal + normals[i - 1]
+        denominator = joint.dot(normal)
+        offset = joint * (width / 2 / denominator) if denominator > 1e-6 else normal * (width / 2)
+        if offset.length_squared() > (width * 2) ** 2:
+            offset.scale_to_length(width * 2)
+        offsets.append(offset)
+    quads = []
+    for i, point in enumerate(vertices):
+        j = (i + 1) % len(vertices)
+        quads.append(tuple(tuple(p) for p in (point + offsets[i], vertices[j] + offsets[j],
+                                              vertices[j] - offsets[j], point - offsets[i])))
+    return tuple(quads)
 
 
 def board_circle(screen, color, center, radius, width=0, transform=None, stroke=False):
@@ -133,7 +170,6 @@ def draw(ecran, timp=0, animator=None, hovered=None, show_paths=False, facelets=
     scale = min(latime, inaltime) / 800
     stroke_scale = min(ecran.get_size()) / 800
     outline_width = max(1, round(3 * stroke_scale))
-    seam_width = max(1, round(stroke_scale))
     selected = hovered or (animator.current[0] if animator is not None and animator.current else None)
     draw_zones(ecran, selected, coordinate_size, transform)
 
@@ -150,8 +186,6 @@ def draw(ecran, timp=0, animator=None, hovered=None, show_paths=False, facelets=
             polygon(ecran, (255, 255, 255), outlines[cubie_id], halo_width)
         for culoare, puncte in shapes.values():
             polygon(ecran, CULORI_RGB[culoare], puncte)
-        for _, puncte in shapes.values():
-            polygon(ecran, (45, 38, 48), puncte, seam_width)
         for outline in outlines.values():
             polygon(ecran, OUTLINE_RGB, outline, outline_width)
 
