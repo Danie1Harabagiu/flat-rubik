@@ -11,6 +11,35 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
+## Pe telefon, în browser
+
+Versiunea web rulează același joc prin Pygbag, fără instalare de Python pe
+telefon. Linkul privat este
+[Flat Rubik](https://flat-rubik-mobile-daniel.harabagiupavel006.chatgpt.site).
+Deschide-l autentificat în contul care deține site-ul. Prima încărcare descarcă
+motorul Python; următoarele încărcări folosesc cache-ul browserului.
+
+În poziție verticală apar șase butoane colorate mari, fiecare cu două săgeți:
+jumătatea stângă rotește invers, jumătatea dreaptă în sens orar. Poți folosi și
+săgețile de pe centre. Comutarea 90°/45°, pauza, amestecarea, culorile și
+viteza sunt disponibile prin atingere. Poziția se păstrează în browserul și
+telefonul folosit; nu se sincronizează cu salvarea de pe calculator.
+
+Pentru construirea versiunii web pe calculator:
+
+```powershell
+python -m pip install -r requirements-web.txt
+python scripts/build_web.py
+python -m http.server 8000 --bind 0.0.0.0 --directory dist
+```
+
+Pe telefon, în aceeași rețea Wi-Fi, deschide `http://IP-CALCULATOR:8000`.
+Fișierele de publicat sunt în `dist`. Împachetarea include
+doar codul jocului, fără salvările personale. Workflow-ul GitHub **Build phone
+browser version** verifică jocul și produce arhiva `flat-rubik-web` la push;
+publicarea Sites este separată. Șablonul web este adaptat din
+[Pygbag 0.9.3](https://github.com/pygame-web/pygbag), sub licență MIT.
+
 ## Alegerea modului: Rubik 90° sau Puzzle 45°
 
 Aplicația pornește implicit în **Rubik 90°**, cu mecanica cubului fizic.

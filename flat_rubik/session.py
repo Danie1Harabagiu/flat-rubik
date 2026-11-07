@@ -4,6 +4,7 @@ import math
 from pathlib import Path
 
 from flat_rubik.state import facelets, cube_from_facelets
+from flat_rubik.storage import read_text, write_text
 
 SESSION_PATH = Path(__file__).resolve().parent.parent / "puzzle_session.json"
 
@@ -15,10 +16,13 @@ class SessionStore:
         self.message = ""
 
     def restore(self, classic, variant):
-        if not self.path or not self.path.exists():
+        if not self.path:
             return
         try:
-            data = json.loads(self.path.read_text(encoding="utf-8"))
+            saved = read_text(self.path)
+            if saved is None:
+                return
+            data = json.loads(saved)
             if data["version"] != 1:
                 raise ValueError("Unknown session version")
             colors = {(tuple(s["position"]), tuple(s["normal"])): s["color"] for s in data["rubik"]}
@@ -43,10 +47,8 @@ class SessionStore:
                 "rubik": [{"position": p, "normal": n, "color": color}
                           for (p, n), color in facelets(classic.cube).items()],
                 "puzzle45": variant.export_state()}
-        temporary = self.path.with_suffix(".tmp")
         try:
-            temporary.write_text(json.dumps(data, separators=(",", ":"), allow_nan=False), encoding="utf-8")
-            temporary.replace(self.path)
+            write_text(self.path, json.dumps(data, separators=(",", ":"), allow_nan=False))
             self.signature = signature
             self.message = "Salvare automata activa."
         except OSError:

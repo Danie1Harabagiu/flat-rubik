@@ -1,6 +1,8 @@
 ﻿import pygame
 
 from pathlib import Path
+import asyncio
+import sys
 from copy import deepcopy
 
 from flat_rubik.animation import Animator
@@ -15,8 +17,18 @@ from flat_rubik.session import SessionStore, SESSION_PATH
 
 
 def run(max_frames=None, session_path=SESSION_PATH):
+    """Desktop entry point; the browser uses run_async directly."""
+    asyncio.run(run_async(max_frames=max_frames, session_path=session_path))
+
+
+async def run_async(max_frames=None, session_path=SESSION_PATH):
+    browser = sys.platform == "emscripten"
     pygame.init()
-    screen = pygame.display.set_mode((1080, 800), pygame.RESIZABLE)
+    size = (1080, 800)
+    if browser:
+        import platform
+        size = (max(320, int(platform.window.innerWidth)), max(360, int(platform.window.innerHeight)))
+    screen = pygame.display.set_mode(size, pygame.RESIZABLE)
     pygame.display.set_caption("Flat Rubik")
     clock = pygame.time.Clock()
     animator = Animator(duration=1.0)
@@ -30,9 +42,29 @@ def run(max_frames=None, session_path=SESSION_PATH):
     editor_view = None
     running, paused, paths, dragging, double = True, False, False, False, False
     frames = 0
+    active_finger = None
     while running:
-        dt = clock.tick(60) / 1000
+        if browser:
+            viewport = (max(320, int(platform.window.innerWidth)), max(360, int(platform.window.innerHeight)))
+            if screen.get_size() != viewport:
+                screen = pygame.display.set_mode(viewport, pygame.RESIZABLE)
+        dt = min(.1, clock.tick(0 if browser else 60) / 1000)
         for event in pygame.event.get():
+            # Handle one finger and ignore SDL's duplicate synthetic mouse events.
+            if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION) and getattr(event, "touch", False):
+                continue
+            if event.type in (pygame.FINGERDOWN, pygame.FINGERMOTION, pygame.FINGERUP):
+                if event.type == pygame.FINGERDOWN and active_finger is None:
+                    active_finger = event.finger_id
+                if event.finger_id != active_finger:
+                    continue
+                event_type = {pygame.FINGERDOWN: pygame.MOUSEBUTTONDOWN,
+                              pygame.FINGERMOTION: pygame.MOUSEMOTION,
+                              pygame.FINGERUP: pygame.MOUSEBUTTONUP}[event.type]
+                if event.type == pygame.FINGERUP:
+                    active_finger = None
+                event = pygame.event.Event(event_type, pos=(round(event.x * screen.get_width()),
+                                                            round(event.y * screen.get_height())), button=1)
             board, panel, buttons, slider, actions, compact = layout(screen.get_size())
             if event.type == pygame.QUIT:
                 running = False
@@ -84,7 +116,8 @@ def run(max_frames=None, session_path=SESSION_PATH):
                         paused, double = False, False
                 elif event.button in (1, 3):
                     face = next((f for f, rect in buttons.items() if rect.collidepoint(event.pos)), None)
-                    move = face + ("'" if event.button == 3 else "") if face else None
+                    inverse = event.button == 3 or (face and screen.get_width() < 600 and screen.get_height() >= 600 and event.pos[0] < buttons[face].centerx)
+                    move = face + ("'" if inverse else "") if face else None
                     if board.collidepoint(event.pos):
                         local = (event.pos[0] - board.x, event.pos[1] - board.y)
                         local = board_point(local, *board.size, inverse=True)
@@ -155,6 +188,7 @@ def run(max_frames=None, session_path=SESSION_PATH):
              facelets=editor.colors if editor.editing else None)
         render_controls(screen, animator, paused, paths, hovered, editor=editor, session_message=session.message)
         pygame.display.flip()
+        await asyncio.sleep(0)
         frames += 1
         if max_frames is not None and frames >= max_frames:
             running = False

@@ -1,6 +1,11 @@
 __pycache__/
 *.pyc
 .venv/
+.venv-web/
+build/
+dist/
+mobile-site/
+.tools/
 .vscode/
 position_markers.json
 position_markers.tmp

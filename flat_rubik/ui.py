@@ -3,7 +3,7 @@ import pygame
 from collections import Counter
 
 from flat_rubik.cube import FACE_COLORS
-from flat_rubik.renderer import CULORI_RGB, text_surface
+from flat_rubik.renderer import CULORI_RGB, text_surface, draw_rotation_arrow
 
 TEXT = (43, 31, 61)
 PANEL = (235, 224, 245)
@@ -13,6 +13,21 @@ MIN_DURATION, MAX_DURATION = .2, 3.0
 
 def layout(size):
     w, h = size
+    if w < 600 and h >= 600:
+        panel = pygame.Rect(0, h - 326, w, 326)
+        board = pygame.Rect(0, 0, w, h - 326)
+        x, y = 16, panel.y + 16
+        usable = w - 32
+        width = (usable - 16) // 3
+        buttons = {face: pygame.Rect(x + (i % 3) * (width + 8), y + 40 + (i // 3) * 52, width, 44)
+                   for i, face in enumerate(NAMES)}
+        slider = pygame.Rect(x + 20, y + 178, usable - 40, 22)
+        actions = {name: pygame.Rect(x + i * (width + 8), y + 210, width, 44)
+                   for i, name in enumerate(("pause", "paths", "reset"))}
+        actions.update(edit=pygame.Rect(w - 188, y - 3, 82, 32),
+                       shuffle=pygame.Rect(w - 98, y - 3, 82, 32),
+                       mode=pygame.Rect(x, y + 266, usable, 36))
+        return board, panel, buttons, slider, actions, True
     if w >= 960 and h >= 780:
         board = pygame.Rect(0, 0, w - 280, h)
         panel = pygame.Rect(w - 280, 0, 280, h)
@@ -56,6 +71,7 @@ def duration_at(x, slider):
 
 def render_controls(screen, animator, paused, paths, hovered=None, editor=None, session_message=None):
     board, panel, buttons, slider, actions, compact = layout(screen.get_size())
+    touch_layout = screen.get_width() < 600 and screen.get_height() >= 600
     pygame.draw.rect(screen, PANEL, panel)
 
     def text(value, pos, color=TEXT, small_font=False):
@@ -81,15 +97,21 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
                          3 if face in (hovered, active) else 1, border_radius=7)
         if compact:
             pygame.draw.rect(screen, CULORI_RGB[FACE_COLORS[face]], rect.inflate(-6, -6), border_radius=4)
-            label = text_surface(NAMES[face] if editing else face, 19 if editing else 22, TEXT)
-            if label.get_width() > rect.w - 8:
-                label = pygame.transform.smoothscale(label, (max(1, rect.w - 8), 12))
-            screen.blit(label, label.get_rect(center=rect.center))
+            if touch_layout and not editing:
+                pygame.draw.line(screen, TEXT, (rect.centerx, rect.y + 5), (rect.centerx, rect.bottom - 5))
+                for direction, px in ((-1, rect.x + rect.w / 4), (1, rect.x + 3 * rect.w / 4)):
+                    pygame.draw.circle(screen, TEXT, (round(px), rect.centery), 13)
+                    draw_rotation_arrow(screen, (px, rect.centery), direction, face, 1.35)
+            else:
+                label = text_surface(NAMES[face] if editing else face, 19 if editing else 22, TEXT)
+                if label.get_width() > rect.w - 8:
+                    label = pygame.transform.smoothscale(label, (max(1, rect.w - 8), 12))
+                screen.blit(label, label.get_rect(center=rect.center))
         else:
             pygame.draw.circle(screen, CULORI_RGB[FACE_COLORS[face]], (rect.x + 15, rect.centery), 7)
             pygame.draw.circle(screen, TEXT, (rect.x + 15, rect.centery), 7, 1)
             text(NAMES[face] if editing else f"{face}  {NAMES[face]}", (rect.x + 29, rect.y + 12), small_font=True)
-    label_y = y + 77 if compact else y + 275
+    label_y = y + 151 if touch_layout else y + 77 if compact else y + 275
     counts = Counter(editor.colors.values()) if editing else {}
     count_label = "  ".join(f"{c}:{counts[color]}" for c, color in zip("RPGVAB", ("rosu", "portocaliu", "galben", "verde", "alb", "albastru"))) if editing else ""
     text(count_label if editing else f"Durata rotatiei: {animator.duration:.1f} s", (x, label_y))
@@ -106,7 +128,7 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
                 line = candidate
         lines.append(line)
         for i, line in enumerate(lines[:2 if compact else 3]):
-            text(line, (x, (y + 101 if compact else y + 300) + i * 17),
+            text(line, (x, (y + 175 if touch_layout else y + 101 if compact else y + 300) + i * 17),
                  color=(160, 35, 60) if editor.error else TEXT, small_font=True)
     elif not compact:
         text("rapid                             lent", (x + 4, y + 300), small_font=True)

@@ -8,6 +8,7 @@ from flat_rubik.geometry import center_at
 from flat_rubik.projection import project, slot_polygon
 from flat_rubik.state import facelets, cube_from_facelets
 from flat_rubik.cube import scramble
+from flat_rubik.storage import read_text, write_text
 
 SLOTS = frozenset((s.position, s.normal) for s in project(Cube()))
 COLOR_CYCLE = ("rosu", "portocaliu", "galben", "verde", "albastru", "alb")
@@ -49,9 +50,12 @@ class ColorEditor:
         self.history = []
         self.message = ""
         self.error = False
-        if self.path and self.path.exists():
+        if self.path:
             try:
-                data = json.loads(self.path.read_text(encoding="utf-8"))
+                saved = read_text(self.path)
+                if saved is None:
+                    return
+                data = json.loads(saved)
                 if data.get("version") != 1:
                     raise ValueError("Unknown color format")
                 self.colors = self._decode(data["draft"])
@@ -103,9 +107,7 @@ class ColorEditor:
             return [{"position": p, "normal": n, "color": c} for (p, n), c in sorted(colors.items())]
         data = {"version": 1, "draft": encode(self.colors), "applied": encode(self.applied) if self.applied else None}
         try:
-            temporary = self.path.with_suffix(".tmp")
-            temporary.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-            temporary.replace(self.path)
+            write_text(self.path, json.dumps(data, indent=2) + "\n")
         except OSError:
             self.message = "Culori active; salvarea a esuat."
 

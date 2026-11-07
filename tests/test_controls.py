@@ -68,6 +68,34 @@ class MouseControlsTests(unittest.TestCase):
         self.assertEqual(Cube().color_counts()["alb"], 9)
         self.assertEqual(CULORI_RGB["alb"], (255, 255, 255))
 
+    def test_phone_touch_selects_both_directions_without_duplicate_moves(self):
+        import pygame
+        from flat_rubik.app import run
+        from flat_rubik.ui import layout
+        animator = Animator()
+        size = (390, 844)
+        board, panel, buttons, slider, actions, compact = layout(size)
+        events = []
+        expected = []
+        for face, rect in buttons.items():
+            self.assertGreaterEqual(rect.w / 2, 44)
+            self.assertGreaterEqual(rect.h, 44)
+            for direction in (-1, 1):
+                x = rect.centerx + direction * rect.w / 4
+                y = rect.centery
+                events.extend([
+                    pygame.event.Event(pygame.FINGERDOWN, x=x / size[0], y=y / size[1], finger_id=7),
+                    pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(x, y), button=1, touch=True),
+                    pygame.event.Event(pygame.FINGERUP, x=x / size[0], y=y / size[1], finger_id=7),
+                ])
+                expected.append(face + ("'" if direction == -1 else ""))
+        set_mode = pygame.display.set_mode
+        with patch("flat_rubik.app.Animator", return_value=animator), \
+             patch("pygame.event.get", return_value=events), \
+             patch("pygame.display.set_mode", side_effect=lambda *args: set_mode(size)):
+            run(max_frames=1, session_path=None)
+        self.assertEqual([animator.current] + list(animator.queue), expected)
+
 
 if __name__ == "__main__":
     unittest.main()
