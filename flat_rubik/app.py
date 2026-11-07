@@ -108,7 +108,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                 else:
                     solver.handle(event, classic, screen.get_size())
                 continue
-            board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible)
+            board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible, editing=editor.editing)
             view_button = pygame.Rect(180, 8, max(1, min(200, screen.get_width() - 188)), 30)
             area = board.copy()
             area.y += 46
@@ -288,7 +288,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
         session.save(classic, variant)
         save_preferences(force=not dragging and orbit is None)
         playing_solution = solver.visible and solver.docked
-        board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible and not playing_solution)
+        board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible and not playing_solution, editing=editor.editing)
         area = board.copy()
         area.y += 46
         area.h = max(1, area.h - 46)

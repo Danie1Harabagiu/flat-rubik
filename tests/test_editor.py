@@ -181,8 +181,8 @@ class EditorTests(unittest.TestCase):
         local = board_point(point, 800, 800, inverse=True)
         shown = board_point(local, 800, 800)
         click_point = (shown[0], shown[1] * 754 / 800 + 46)
-        _, _, _, _, actions, _ = layout((1080, 800))
-        events = [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["edit"].center, button=1),
+        _, _, _, _, actions, _ = layout((1080, 800), editing=True)
+        events = [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e, mod=0),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=click_point, button=1),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["pause"].center, button=1)]
         with patch("flat_rubik.app.ColorEditor", return_value=editor), patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):
@@ -220,8 +220,8 @@ class EditorTests(unittest.TestCase):
         editor.colors = facelets(target)
         editor.resume_draft = True
         animator = Animator()
-        actions = layout((1080, 800))[4]
-        events = [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["edit"].center, button=1),
+        actions = layout((1080, 800), editing=True)[4]
+        events = [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e, mod=0),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["pause"].center, button=1),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(200, 423), button=1)]
         with patch("flat_rubik.app.ColorEditor", return_value=editor), patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):

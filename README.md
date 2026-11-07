@@ -192,7 +192,7 @@ vederea 3D reprezintă modul Rubik de 90°.
 
 ## Introducerea culorilor cubului fizic
 
-Apasă **Culori** sau **E** și dă clic pe suprafața pe care vrei s-o colorezi.
+Apasă **E** și dă clic pe suprafața pe care vrei s-o colorezi.
 Fiecare clic trece la culoarea următoare, fără selecție din paletă.
 Întreaga suprafață își schimbă culoarea. Copiază
 astfel configurația cubului fizic. Orientează cubul fizic cu roșu în față,
@@ -234,7 +234,8 @@ pregătește o asemenea configurație, pe care o poți instala prin **Aplică**.
 ## Interfață și urmărirea mutărilor
 
 Panoul lateral oferă șase butoane cu numele și culorile fețelor, controlul
-vitezei, pauză, afișarea traseelor și resetare. Clic stânga/dreapta pe butoane
+vitezei, pauză, amestecare și resetare. Butoanele Culori și Trasee nu mai apar
+în panoul principal. Clic stânga/dreapta pe butoanele fețelor
 are același efect ca pe centre. În ferestre mai mici panoul se mută sub desen.
 
 Zonele fețelor au fundaluri discret colorate și delimitări fixe, independente

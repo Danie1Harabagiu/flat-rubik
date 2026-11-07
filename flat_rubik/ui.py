@@ -12,7 +12,23 @@ NAMES = {"F": "Rosu", "B": "Portocaliu", "U": "Galben", "R": "Verde", "D": "Alb"
 MIN_DURATION, MAX_DURATION = .2, 3.0
 
 
-def layout(size, controls_visible=True):
+def _main_actions(actions, editing, compact):
+    if editing:
+        return actions
+    actions.pop("edit")
+    actions.pop("paths")
+    first = actions["pause"].copy()
+    for i, name in enumerate(("pause", "reset", "shuffle")):
+        rect = first.copy()
+        if compact:
+            rect.x += i * (first.w + 8)
+        else:
+            rect.y += i * 46
+        actions[name] = rect
+    return actions
+
+
+def layout(size, controls_visible=True, editing=False):
     w, h = size
     if not controls_visible:
         return pygame.Rect(0, 0, w, h), pygame.Rect(0, 0, 0, 0), {}, pygame.Rect(0, 0, 0, 0), {}, False
@@ -34,7 +50,7 @@ def layout(size, controls_visible=True):
         mode.w = (usable - 12) // 3
         actions["fit"] = pygame.Rect(mode.right + 6, mode.y, mode.w, mode.h)
         actions["solve"] = pygame.Rect(actions["fit"].right + 6, mode.y, usable - 2 * mode.w - 12, mode.h)
-        return board, panel, buttons, slider, actions, True
+        return board, panel, buttons, slider, _main_actions(actions, editing, True), True
     if w >= 960 and h >= 780:
         board = pygame.Rect(0, 0, w - 280, h)
         panel = pygame.Rect(w - 280, 0, 280, h)
@@ -72,7 +88,7 @@ def layout(size, controls_visible=True):
     mode.w = (usable - 12) // 3
     actions["fit"] = pygame.Rect(mode.right + 6, mode.y, mode.w, mode.h)
     actions["solve"] = pygame.Rect(actions["fit"].right + 6, mode.y, usable - 2 * mode.w - 12, mode.h)
-    return board, panel, buttons, slider, actions, compact
+    return board, panel, buttons, slider, _main_actions(actions, editing, compact), compact
 
 
 def visibility_button(size):
@@ -92,7 +108,8 @@ def duration_at(x, slider):
 
 
 def render_controls(screen, animator, paused, paths, hovered=None, editor=None, session_message=None, fit_mode="proportional"):
-    board, panel, buttons, slider, actions, compact = layout(screen.get_size())
+    editing = editor is not None and editor.editing
+    board, panel, buttons, slider, actions, compact = layout(screen.get_size(), editing=editing)
     touch_layout = screen.get_width() < 600 and screen.get_height() >= 600
     pygame.draw.rect(screen, PANEL, panel)
 
@@ -104,7 +121,6 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
         screen.blit(label, pos)
 
     x, y = panel.x + 16, panel.y + 16
-    editing = editor is not None and editor.editing
     variant = getattr(animator, "step_degrees", 90) == 45
     text("CULORI" if editing else "FLAT RUBIK" if compact else "FLAT RUBIK  |  Alege o fata", (x, y))
     if not compact:
@@ -175,13 +191,12 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
             label = pygame.transform.smoothscale(label, (max(1, rect.w - 6), 14))
         screen.blit(label, label.get_rect(center=rect.center))
     if not compact:
-        status_y = y + 603
+        status_y = y + (603 if editing else 511)
         text(f"Mutare: {animator.current or '-'}   |   Coada: {animator.pending}", (x, status_y))
         solved = animator.is_solved if variant else animator.cube.solved
         state = "Editezi culorile reale ale cubului." if editing else "Pauza" if paused else "Rotatie in curs" if animator.current else "Rezolvat" if solved else "Puzzle amestecat"
         text(state, (x, status_y + 25))
-        legend = "Cerc: plecare  |  Sageata: sosire" if paths else "Piesele raman unite in rotatie."
-        lines = ("Clicuri repetate: schimba culoarea", "Ctrl+Z: anuleaza ultima culoare", "Enter: aplica | Esc: renunta", "Random valid: configuratie posibila") if editing else ("45°: orice fata, fara aliniere." if variant else legend, "E: culori | P: pauza | +/-: durata", "Spatiu: amestecare", "Home: reset | Esc: iesire", session_message or "Salvare automata dupa mutare.")
+        lines = ("Clicuri repetate: schimba culoarea", "Ctrl+Z: anuleaza ultima culoare", "Enter: aplica | Esc: renunta", "Random valid: configuratie posibila") if editing else ("45°: orice fata, fara aliniere." if variant else "Piesele raman unite in rotatie.", "P: pauza | +/-: durata", "Spatiu: amestecare", "Home: reset | Esc: iesire", session_message or "Salvare automata dupa mutare.")
         for i, line in enumerate(lines):
             text(line, (x, status_y + 50 + i * 19), small_font=True)
     return board

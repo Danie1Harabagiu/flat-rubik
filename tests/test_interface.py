@@ -13,6 +13,17 @@ from copy import deepcopy
 
 
 class InterfaceTests(unittest.TestCase):
+    def test_main_panel_omits_color_editor_and_routes_buttons(self):
+        from flat_rubik.ui import layout
+        for size in ((1080, 800), (390, 844), (640, 700), (320, 360)):
+            actions = layout(size)[4]
+            self.assertNotIn("edit", actions)
+            self.assertNotIn("paths", actions)
+            self.assertTrue({"pause", "reset", "shuffle", "mode", "fit", "solve"} <= actions.keys())
+            editor = layout(size, editing=True)[4]
+            self.assertIn("edit", editor)
+            self.assertIn("paths", editor)
+
     def setUp(self):
         from flat_rubik.editor import ColorEditor
         # Keep the user's saved configuration independent of UI tests.
