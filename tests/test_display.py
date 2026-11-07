@@ -32,7 +32,7 @@ class DisplayTests(unittest.TestCase):
     def test_original_centers(self):
         centers = geometrie_centre(800, 800)
         self.assertEqual(len(centers), 6)
-        self.assertEqual(centers["rosu"], dict(tip="cerc", centru=(400, 400), raza=32))
+        self.assertEqual(centers["rosu"], dict(tip="cerc", centru=(400, 400), raza=44))
         self.assertEqual(centers["portocaliu"]["raza_interioara"], 300)
         for color in ("galben", "verde", "alb", "albastru"):
             self.assertEqual(centers[color]["tip"], "poligon")
@@ -63,8 +63,8 @@ class DisplayTests(unittest.TestCase):
             radii = [math.dist(p, (400, 400)) for p in polygon]
             return min(radii), max(radii)
         # The front and rear edge stickers touch their lateral partners.
-        self.assertAlmostEqual(region((0, 1, 1), (0, 0, 1))[1], 82, delta=1)
-        self.assertAlmostEqual(region((0, 1, 1), (0, 1, 0))[0], 82, delta=1)
+        self.assertAlmostEqual(region((0, 1, 1), (0, 0, 1))[1], 88, delta=1)
+        self.assertAlmostEqual(region((0, 1, 1), (0, 1, 0))[0], 88, delta=1)
         self.assertAlmostEqual(region((0, 1, -1), (0, 0, -1))[0], 246, delta=1)
         self.assertAlmostEqual(region((0, 1, -1), (0, 1, 0))[1], 246, delta=1)
         # On the top-right diagonal, yellow is left of green.
@@ -117,7 +117,7 @@ class DisplayTests(unittest.TestCase):
             animator.update(.1)
             screen.fill(BACKGROUND_RGB)
             draw(screen, animator=animator)
-            red_sample = (size[0] // 2 + round(22 * min(size) / 800), size[1] // 2)
+            red_sample = (size[0] // 2, size[1] // 2 + round(22 * min(size) / 800))
             self.assertEqual(tuple(screen.get_at(red_sample))[:3], CULORI_RGB["rosu"])
         pygame.quit()
         run(max_frames=3, session_path=None)

@@ -42,6 +42,10 @@ ultima poziție completă. Fișierul sesiunii este local și ignorat de Git.
 
 ## Comenzi
 
+Pe fiecare centru fix sunt două săgeți: **←** rotește fața în sens invers,
+iar **→** în sens orar, privind fața din exterior. Ambele se activează cu
+clic stânga și folosesc pasul modului activ (90° sau 45°).
+
 | Tastă | Acțiune |
 | --- | --- |
 | Clic stânga pe un centru | Rotație de 90° în sens orar, privind fața din exterior |
@@ -59,8 +63,8 @@ ultima poziție completă. Fișierul sesiunii este local și ignorat de Git.
 
 F = roșu, B = portocaliu, U = galben, R = verde, D = alb, L = albastru.
 Clicurile funcționează pe cercul roșu, inelul portocaliu și cele patru
-centre laterale de o singură culoare. Centrele sunt evidențiate prin insigne
-contrastante cu literele F, B, U, R, D, L. Clicurile pe piesele mobile sau în
+centre laterale de o singură culoare. Centrele au săgeți pentru cele două
+sensuri de rotație, fără litere. Clicurile pe piesele mobile sau în
 spațiile libere sunt ignorate. Mutările se adaugă în coada de animații,
 inclusiv când o rotație este deja în curs. Detectarea se adaptează la
 redimensionarea ferestrei.
@@ -142,8 +146,8 @@ intervale de 45°, cu piese separate prin spații pe fundal mov. Imaginea fără
 stabilește contururile, iar imaginea cu marcaje arată delimitarea fețelor.
 Marcajele colorate trasate de mână nu fac parte din contururile pieselor.
 
-Cercul roșu central are raza 32, micșorată pentru a oferi mai mult spațiu
-pieselor interioare. Inelul portocaliu ocupă razele 300–330, mai îngust
+Centrul roșu are raza de bază 44, iar piesele interioare încep la raza 50,
+pentru laturi mai late spre centru. Inelul portocaliu ocupă razele 300–330, mai îngust
 pentru a reduce greutatea vizuală a exteriorului.
 Centrele laterale ocupă pozițiile cardinale ale rândului mijlociu,
 între razele 133–202, cu deschidere de 36°. Galbenul este sus, verdele în
@@ -155,12 +159,12 @@ centru; la exterior, portocaliul ocupă partea apropiată de inel. La colțuri
 și la muchiile diagonale, culorile laterale împart lățimea regiunii. Cele
 48 de suprafețe mobile aparțin celor 20 de cubulețe mobile.
 
-La dimensiunea 800×800, rândurile mobile ocupă razele 38–126, 133–202 și
+La dimensiunea 800×800, rândurile mobile ocupă razele 50–126, 133–202 și
 209–292. Rândul interior este cu aproximativ 28% mai lat radial decât în
 varianta anterioară, iar cel exterior cu aproximativ 26% mai îngust.
 Spațiile radiale au fost reduse la 6–8 pixeli, iar cele unghiulare
 la 9°, conform preferinței utilizatorului pentru piese mai apropiate.
-Separarea roșu/lateral este la raza 82, iar separarea
+Separarea roșu/lateral este la raza 88, iar separarea
 lateral/portocaliu la 246. **Proporțiile pornesc de la fotografii și sunt
 ajustate după preferințele utilizatorului, nu măsurători exacte.**
 Razele sunt definite într-un singur loc în `geometry.py` și folosite atât
@@ -219,3 +223,9 @@ redimensionarea, coada, controalele mouse, pauza, schimbarea vitezei fără salt
 și păstrarea ariei conturului la schimbarea orientării. Testul Pygame folosește
 driverul SDL `dummy` și verifică desenarea cercului roșu, apoi pornește
 bucla aplicației pentru trei cadre, fără a deschide o fereastră vizibilă.
+
+## Formă de pătrat rotunjit
+
+Afișarea extinde zonele diagonale pentru un centru și piese mai pătrățoase.
+Aceeași transformare se aplică pieselor, contururilor și animațiilor; clicurile
+și editorul de culori urmăresc forma afișată.

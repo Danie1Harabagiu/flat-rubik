@@ -3,11 +3,27 @@ import math
 
 SPOKE_HALF_ANGLE = math.radians(18)
 # Shared by static slots, animated layers, face guides, and mouse hit testing.
-RED_RADIUS = 32
-INNER_RADII = (38, 82, 126)  # inside edge, colored seam, outside edge
+RED_RADIUS = 44
+# A wider central opening gives the inner ends of the pieces a broader edge.
+INNER_RADII = (50, 88, 126)  # inside edge, colored seam, outside edge
 MIDDLE_RADII = (133, 202)
 OUTER_RADII = (209, 246, 292)
 ORANGE_RADII = (300, 330)
+
+
+def board_point(point, width, height, inverse=False):
+    """Map the circular layout to a rounded square, with an exact inverse.
+
+    The fourth-power norm extends diagonal regions without changing the
+    cardinal extents. A shared final mapping keeps animated seams together.
+    """
+    x, y = point[0] - width / 2, point[1] - height / 2
+    radius = math.hypot(x, y)
+    if radius == 0:
+        return width / 2, height / 2
+    norm = ((x / radius) ** 4 + (y / radius) ** 4) ** .25
+    factor = norm if inverse else 1 / norm
+    return width / 2 + x * factor, height / 2 + y * factor
 
 
 def resample_polygon(points, count=64):
@@ -157,6 +173,24 @@ def geometrie_centre(latime, inaltime):
         }
 
     return centre
+
+
+def rotation_handles(width, height):
+    """Shared positions and hit radii for the two arrows on each fixed center."""
+    scale = min(width, height) / 800
+    result = {}
+    for color, shape in geometrie_centre(width, height).items():
+        if shape["tip"] == "cerc":
+            x, y = shape["centru"]
+        elif shape["tip"] == "inel":
+            x, y = shape["centru"]
+            y -= (shape["raza_interioara"] + shape["raza_exterioara"]) / 2
+        else:
+            points = shape["puncte"]
+            x, y = (sum(p[i] for p in points) / len(points) for i in (0, 1))
+        result[color] = ((x, y), (x - 20 * scale, y),
+                         (x + 20 * scale, y), 10 * scale)
+    return result
 
 
 def center_at(point, width, height):

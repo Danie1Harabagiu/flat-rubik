@@ -6,7 +6,7 @@ from copy import deepcopy
 from flat_rubik.animation import Animator
 from flat_rubik.cube import scramble, FACE_COLORS
 from flat_rubik.controls import move_for_click
-from flat_rubik.geometry import center_at
+from flat_rubik.geometry import center_at, board_point
 from flat_rubik.renderer import draw, BACKGROUND_RGB
 from flat_rubik.ui import layout, duration_at, render_controls
 from flat_rubik.editor import ColorEditor
@@ -55,7 +55,8 @@ def run(max_frames=None, session_path=SESSION_PATH):
                     dragging = False
                 elif editor.editing:
                     if board.collidepoint(event.pos):
-                        editor.paint((event.pos[0] - board.x, event.pos[1] - board.y), event.button, board.size)
+                        local = board_point((event.pos[0] - board.x, event.pos[1] - board.y), *board.size, inverse=True)
+                        editor.paint(local, event.button, board.size)
                     elif event.button == 1 and action == "pause":
                         cube = editor.apply()
                         if cube is not None:
@@ -86,6 +87,7 @@ def run(max_frames=None, session_path=SESSION_PATH):
                     move = face + ("'" if event.button == 3 else "") if face else None
                     if board.collidepoint(event.pos):
                         local = (event.pos[0] - board.x, event.pos[1] - board.y)
+                        local = board_point(local, *board.size, inverse=True)
                         move = move_for_click(local, event.button, board.size)
                     if move:
                         animator.enqueue([move])
@@ -143,7 +145,8 @@ def run(max_frames=None, session_path=SESSION_PATH):
         mouse = pygame.mouse.get_pos()
         hovered = next((f for f, rect in buttons.items() if rect.collidepoint(mouse)), None)
         if board.collidepoint(mouse):
-            color = center_at((mouse[0] - board.x, mouse[1] - board.y), *board.size)
+            local = board_point((mouse[0] - board.x, mouse[1] - board.y), *board.size, inverse=True)
+            color = center_at(local, *board.size)
             hovered = next((f for f, c in FACE_COLORS.items() if c == color), None)
         screen.fill(BACKGROUND_RGB)
         board_screen = screen.subsurface(board)

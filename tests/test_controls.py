@@ -19,8 +19,8 @@ class MouseControlsTests(unittest.TestCase):
         self.addCleanup(isolation.stop)
 
     # Interior points of the six drawn center regions at 800 x 800.
-    centers = {"F": (400, 400), "B": (715, 400), "U": (400, 255),
-               "R": (545, 400), "D": (400, 545), "L": (255, 400)}
+    centers = {"F": (400, 400), "B": (715, 400), "U": (400, 235),
+               "R": (565, 400), "D": (400, 565), "L": (235, 400)}
 
     def test_all_centers_both_buttons_after_resize(self):
         for width, height in ((800, 800), (400, 600), (1200, 500)):
@@ -37,6 +37,14 @@ class MouseControlsTests(unittest.TestCase):
                 self.assertIsNone(move_for_click(point, button, (800, 800)))
         for button in (2, 4, 5):
             self.assertIsNone(move_for_click((400, 400), button, (800, 800)))
+
+    def test_arrows_choose_both_directions_with_left_click(self):
+        from flat_rubik.geometry import rotation_handles
+        for size in ((800, 800), (400, 600), (1200, 500)):
+            for face, color in FACE_COLORS.items():
+                _, left, right, _ = rotation_handles(*size)[color]
+                self.assertEqual(move_for_click(left, 1, size), face + "'")
+                self.assertEqual(move_for_click(right, 1, size), face)
 
     def test_pygame_mouse_events_enqueue_inverse_pairs(self):
         import pygame

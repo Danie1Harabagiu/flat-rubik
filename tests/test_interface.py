@@ -106,7 +106,9 @@ class InterfaceTests(unittest.TestCase):
                 white = pygame.mask.from_threshold(surface, (255, 255, 255), (1, 1, 1, 255)).count()
                 self.assertGreater(white, baseline, face)
                 for color, polygon in animator.shapes(800, 800).values():
-                    sample = tuple(round(sum(p[i] for p in polygon) / len(polygon)) for i in (0, 1))
+                    from flat_rubik.geometry import board_point
+                    middle = tuple(sum(p[i] for p in polygon) / len(polygon) for i in (0, 1))
+                    sample = tuple(round(v) for v in board_point(middle, 800, 800))
                     self.assertEqual(tuple(surface.get_at(sample))[:3], CULORI_RGB[color], (face, color))
         finally:
             pygame.quit()
