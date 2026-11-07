@@ -102,6 +102,7 @@ clic stânga și folosesc pasul modului activ (90° sau 45°).
 | Home | Resetare imediată; golește coada și animația |
 | Esc | Ieșire |
 | H | Ascunde / afișează panoul de butoane; desenul ocupă spațiul disponibil |
+| V | Comută între Cerc, Cub 3D și Ambele |
 | F11 | Ecran complet / fereastră pe laptop; Esc revine din ecran complet |
 | P | Pauză / continuare |
 | + / - | Mărește / micșorează durata rotației |
@@ -124,6 +125,15 @@ Fereastra este redimensionabilă.
 Butonul mic din stânga sus ascunde și afișează panoul inclusiv prin atingere.
 Rotațiile prin săgețile centrelor și comenzile de tastatură rămân disponibile
 când panoul este ascuns.
+
+Vederea **Ambele** afișează cercul și cubul Rubik 3D sincronizate, inclusiv
+în timpul rotațiilor, pauzei și amestecării. Butonul **Vedere** din partea
+de sus comută între Cerc, Cub și Ambele, inclusiv pe telefon. Trage pe cub
+cu mouse-ul sau degetul pentru a vedea celelalte fețe; acest gest schimbă
+doar unghiul de privire. Pentru mutări folosește panoul, săgețile cercului
+sau tastatura. Pe telefon, în Ambele, vederile se așază vertical.
+Editorul de culori și puzzle-ul experimental de 45° folosesc cercul;
+vederea 3D reprezintă modul Rubik de 90°.
 
 ## Introducerea culorilor cubului fizic
 

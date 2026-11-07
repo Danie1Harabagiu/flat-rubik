@@ -9,7 +9,8 @@ from flat_rubik.animation import Animator
 from flat_rubik.cube import scramble, FACE_COLORS
 from flat_rubik.controls import move_for_click
 from flat_rubik.geometry import center_at, board_point
-from flat_rubik.renderer import draw, BACKGROUND_RGB
+from flat_rubik.renderer import draw, BACKGROUND_RGB, text_surface
+from flat_rubik.cube_view import draw_cube, view_regions
 from flat_rubik.ui import (layout, duration_at, render_controls,
                            visibility_button, render_visibility_button)
 from flat_rubik.editor import ColorEditor
@@ -45,6 +46,9 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
     frames = 0
     active_finger = None
     controls_visible, fullscreen = True, False
+    view_mode = "Ambele"
+    yaw, pitch = -.55, .45
+    orbit = None
     windowed_size = size
     while running:
         if browser:
@@ -69,6 +73,11 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                 event = pygame.event.Event(event_type, pos=(round(event.x * screen.get_width()),
                                                             round(event.y * screen.get_height())), button=1)
             board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible)
+            view_button = pygame.Rect(180, 8, max(1, min(200, screen.get_width() - 188)), 30)
+            area = board.copy()
+            area.y += 46
+            area.h = max(1, area.h - 46)
+            board, cube_rect = view_regions(area, "Cerc" if animator is variant or editor.editing else view_mode)
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.VIDEORESIZE and not fullscreen:
@@ -77,6 +86,13 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                 if event.button == 1 and visibility_button(screen.get_size()).collidepoint(event.pos):
                     controls_visible = not controls_visible
                     dragging = False
+                    continue
+                if event.button == 1 and view_button.collidepoint(event.pos):
+                    view_mode = {"Cerc": "Cub", "Cub": "Ambele", "Ambele": "Cerc"}[view_mode]
+                    orbit = None
+                    continue
+                if event.button == 1 and cube_rect.collidepoint(event.pos):
+                    orbit = event.pos
                     continue
                 action = next((name for name, rect in actions.items() if rect.collidepoint(event.pos)), None)
                 if event.button == 1 and action == "mode":
@@ -131,13 +147,21 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                         move = move_for_click(local, event.button, board.size)
                     if move:
                         animator.enqueue([move])
+            elif event.type == pygame.MOUSEMOTION and orbit is not None:
+                yaw += (event.pos[0] - orbit[0]) * .009
+                pitch = max(-1.5, min(1.5, pitch + (event.pos[1] - orbit[1]) * .009))
+                orbit = event.pos
             elif event.type == pygame.MOUSEMOTION and dragging:
                 animator.set_duration(duration_at(event.pos[0], slider))
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 dragging = False
+                orbit = None
             elif event.type == pygame.KEYDOWN:
                 key = pygame.key.name(event.key).upper()
-                if event.key == pygame.K_h:
+                if event.key == pygame.K_v:
+                    view_mode = {"Cerc": "Cub", "Cub": "Ambele", "Ambele": "Cerc"}[view_mode]
+                    orbit = None
+                elif event.key == pygame.K_h:
                     controls_visible = not controls_visible
                     dragging = False
                 elif event.key == pygame.K_F11 and not browser:
@@ -196,6 +220,10 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
             animator.update(dt)
         session.save(classic, variant)
         board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible)
+        area = board.copy()
+        area.y += 46
+        area.h = max(1, area.h - 46)
+        board, cube_rect = view_regions(area, "Cerc" if animator is variant or editor.editing else view_mode)
         mouse = pygame.mouse.get_pos()
         hovered = next((f for f, rect in buttons.items() if rect.collidepoint(mouse)), None)
         if board.collidepoint(mouse):
@@ -203,13 +231,21 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
             color = center_at(local, *board.size)
             hovered = next((f for f, c in FACE_COLORS.items() if c == color), None)
         screen.fill(BACKGROUND_RGB)
-        board_screen = screen.subsurface(board)
-        draw(board_screen, animator=editor_view if editor.editing else animator,
-             hovered=None if editor.editing else hovered, show_paths=paths and not editor.editing,
-             facelets=editor.colors if editor.editing else None)
+        if board.w and board.h:
+            board_screen = screen.subsurface(board)
+            draw(board_screen, animator=editor_view if editor.editing else animator,
+                 hovered=None if editor.editing else hovered, show_paths=paths and not editor.editing,
+                 facelets=editor.colors if editor.editing else None)
+        if cube_rect.w and cube_rect.h:
+            draw_cube(screen.subsurface(cube_rect), animator, yaw, pitch)
         if controls_visible:
             render_controls(screen, animator, paused, paths, hovered, editor=editor, session_message=session.message)
         render_visibility_button(screen, controls_visible)
+        view_button = pygame.Rect(180, 8, max(1, min(200, screen.get_width() - 188)), 30)
+        pygame.draw.rect(screen, (235, 224, 245), view_button, border_radius=7)
+        caption = "45 grade: Cerc" if animator is variant else "Editor: Cerc" if editor.editing else "Vedere: " + view_mode + " [V]"
+        label = text_surface(caption, 19, (43, 31, 61))
+        screen.blit(label, label.get_rect(center=view_button.center))
         pygame.display.flip()
         await asyncio.sleep(0)
         frames += 1

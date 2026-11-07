@@ -177,9 +177,14 @@ class EditorTests(unittest.TestCase):
         animator = Animator()
         before = animator.cube.snapshot()
         slot, point = self.mobile_sample()
+        from flat_rubik.geometry import board_point
+        local = board_point(point, 800, 800, inverse=True)
+        scale = 754 / 800
+        shown = board_point((400 + (local[0] - 400) * scale, 377 + (local[1] - 400) * scale), 800, 754)
+        click_point = (shown[0], shown[1] + 46)
         _, _, _, _, actions, _ = layout((1080, 800))
         events = [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["edit"].center, button=1),
-                  pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=point, button=1),
+                  pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=click_point, button=1),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["pause"].center, button=1)]
         with patch("flat_rubik.app.ColorEditor", return_value=editor), patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):
             run(max_frames=1, session_path=None)
@@ -219,7 +224,7 @@ class EditorTests(unittest.TestCase):
         actions = layout((1080, 800))[4]
         events = [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["edit"].center, button=1),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["pause"].center, button=1),
-                  pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(400, 400), button=1)]
+                  pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(200, 423), button=1)]
         with patch("flat_rubik.app.ColorEditor", return_value=editor), patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):
             run(max_frames=1, session_path=None)
         self.assertFalse(editor.editing)
