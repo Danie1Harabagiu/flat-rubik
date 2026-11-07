@@ -33,7 +33,7 @@ class DisplayTests(unittest.TestCase):
         centers = geometrie_centre(800, 800)
         self.assertEqual(len(centers), 6)
         self.assertEqual(centers["rosu"], dict(tip="cerc", centru=(400, 400), raza=44))
-        self.assertEqual(centers["portocaliu"]["raza_interioara"], 302)
+        self.assertEqual(centers["portocaliu"]["raza_interioara"], 300)
         for color in ("galben", "verde", "alb", "albastru"):
             self.assertEqual(centers[color]["tip"], "poligon")
             points = centers[color]["puncte"]

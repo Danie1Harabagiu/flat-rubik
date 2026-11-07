@@ -1,14 +1,14 @@
 
 import math
 
-SPOKE_HALF_ANGLE = math.radians(21)  # three-degree separation between adjacent pieces
+SPOKE_HALF_ANGLE = math.radians(21.75)  # one-and-a-half-degree separation between adjacent pieces
 # Shared by static slots, animated layers, face guides, and mouse hit testing.
 RED_RADIUS = 44
 # A wider central opening gives the inner ends of the pieces a broader edge.
-INNER_RADII = (52, 88, 126)  # inside edge, colored seam, outside edge
-MIDDLE_RADII = (134, 202)
-OUTER_RADII = (210, 246, 294)
-ORANGE_RADII = (302, 330)
+INNER_RADII = (48, 88, 128)  # inside edge, colored seam, outside edge
+MIDDLE_RADII = (132, 204)
+OUTER_RADII = (208, 246, 296)
+ORANGE_RADII = (300, 330)
 
 
 def board_point(point, width, height, inverse=False):
