@@ -56,10 +56,11 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
     solver = SolvePanel()
     solver.budget_text = f"{settings['search_budget']:g}"
     editor_view = None
-    running, paused, paths, dragging, double = True, settings["paused"], settings["paths"], False, False
+    running, paused, paths, dragging, double = True, settings["paused"], False, False, False
     frames = 0
     active_finger = None
     controls_visible = settings["controls_visible"]
+    face_buttons = settings["face_buttons"]
     view_mode = settings["view_mode"]
     fit_mode = settings["fit_mode"]
     yaw, pitch = settings["yaw"], settings["pitch"]
@@ -79,7 +80,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                           "window_size": list(windowed_size if fullscreen else screen.get_size()),
                           "yaw": (yaw + math.pi) % math.tau - math.pi, "pitch": pitch,
                           "search_budget": budget, "rubik_duration": classic.duration,
-                          "puzzle45_duration": variant.duration}, force=force)
+                          "puzzle45_duration": variant.duration, "face_buttons": face_buttons}, force=force)
     while running:
         if browser:
             viewport = (max(320, int(platform.window.innerWidth)), max(360, int(platform.window.innerHeight)))
@@ -108,7 +109,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                 else:
                     solver.handle(event, classic, screen.get_size())
                 continue
-            board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible, editing=editor.editing)
+            board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible, editing=editor.editing, face_buttons=face_buttons)
             view_button = pygame.Rect(180, 8, max(1, min(200, screen.get_width() - 188)), 30)
             area = board.copy()
             area.y += 46
@@ -137,7 +138,9 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                         orbit = dict(start=event.pos, last=event.pos, moved=False, face=face)
                     continue
                 action = next((name for name, rect in actions.items() if rect.collidepoint(event.pos)), None)
-                if event.button == 1 and action == "fit":
+                if event.button == 1 and action == "faces":
+                    face_buttons = not bool(buttons)
+                elif event.button == 1 and action == "fit":
                     fit_mode = FIT_MODES[(FIT_MODES.index(fit_mode) + 1) % len(FIT_MODES)]
                 elif event.button == 1 and action == "solve":
                     if not editor.editing:
@@ -288,7 +291,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
         session.save(classic, variant)
         save_preferences(force=not dragging and orbit is None)
         playing_solution = solver.visible and solver.docked
-        board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible and not playing_solution, editing=editor.editing)
+        board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible and not playing_solution, editing=editor.editing, face_buttons=face_buttons)
         area = board.copy()
         area.y += 46
         area.h = max(1, area.h - 46)
@@ -313,7 +316,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
             draw_cube(screen.subsurface(cube_rect), animator, yaw, pitch)
         if controls_visible and not playing_solution:
             render_controls(screen, animator, paused, paths, hovered, editor=editor,
-                            session_message=preferences.message or session.message, fit_mode=fit_mode)
+                            session_message=preferences.message or session.message, fit_mode=fit_mode, face_buttons=face_buttons)
         render_visibility_button(screen, controls_visible)
         view_button = pygame.Rect(180, 8, max(1, min(200, screen.get_width() - 188)), 30)
         pygame.draw.rect(screen, (235, 224, 245), view_button, border_radius=7)

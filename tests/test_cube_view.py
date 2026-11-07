@@ -30,13 +30,18 @@ class CubeViewTests(unittest.TestCase):
         original = pygame.display.set_mode
         for drag in (False, True):
             animator = Animator(duration=10)
-            start = (195, 400)
-            expected = cube_face_at((195, 118), (390, 236), animator)
+            from flat_rubik.ui import layout
+            area = layout((390, 844))[0].copy()
+            area.y += 46
+            area.h -= 46
+            _, cube = view_regions(area, "Ambele")
+            start = cube.center
+            expected = cube_face_at((start[0] - cube.x, start[1] - cube.y), cube.size, animator)
             self.assertIsNotNone(expected)
             batches = [[pygame.event.Event(pygame.FINGERDOWN, x=start[0] / 390, y=start[1] / 844, finger_id=7)]]
             if drag:
-                batches.append([pygame.event.Event(pygame.FINGERMOTION, x=235 / 390, y=400 / 844, finger_id=7)])
-            batches.append([pygame.event.Event(pygame.FINGERUP, x=(235 if drag else 195) / 390, y=400 / 844, finger_id=7)])
+                batches.append([pygame.event.Event(pygame.FINGERMOTION, x=(start[0] + 40) / 390, y=start[1] / 844, finger_id=7)])
+            batches.append([pygame.event.Event(pygame.FINGERUP, x=(start[0] + (40 if drag else 0)) / 390, y=start[1] / 844, finger_id=7)])
             with patch('pygame.display.set_mode', side_effect=lambda *args: original((390, 844))), \
                  patch('flat_rubik.app.Animator', return_value=animator), \
                  patch('flat_rubik.app.ColorEditor', side_effect=lambda *args: ColorEditor()), \

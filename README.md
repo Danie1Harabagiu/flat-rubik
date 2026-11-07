@@ -133,7 +133,7 @@ ultima poziție completă. Fișierul sesiunii este local și ignorat de Git.
 
 Preferințele sunt salvate separat în `puzzle_settings.json`: forma desenului
 (implicit X/Y), vederea Cerc/Cub/Ambele, modul 90°/45°, butoanele vizibile,
-traseele, pauza, vitezele ambelor jocuri, orientarea camerei și bugetul de
+pauza, vitezele ambelor jocuri, orientarea camerei și bugetul de
 căutare. Pe calculator se rețin și dimensiunea ferestrei și ecranul complet.
 În browser se folosește spațiul ferestrei curente, iar preferințele se păstrează
 în stocarea locală a browserului, separat pentru fiecare site și dispozitiv.
@@ -195,7 +195,7 @@ vederea 3D reprezintă modul Rubik de 90°.
 
 ## Introducerea culorilor cubului fizic
 
-Apasă **E** și dă clic pe suprafața pe care vrei s-o colorezi.
+Apasă **Culori** sau **E** și dă clic pe suprafața pe care vrei s-o colorezi.
 Fiecare clic trece la culoarea următoare, fără selecție din paletă.
 Întreaga suprafață își schimbă culoarea. Copiază
 astfel configurația cubului fizic. Orientează cubul fizic cu roșu în față,
@@ -236,10 +236,13 @@ pregătește o asemenea configurație, pe care o poți instala prin **Aplică**.
 
 ## Interfață și urmărirea mutărilor
 
-Panoul lateral oferă șase butoane cu numele și culorile fețelor, controlul
-vitezei, pauză, amestecare și resetare. Butoanele Culori și Trasee nu mai apar
-în panoul principal. Clic stânga/dreapta pe butoanele fețelor
-are același efect ca pe centre. În ferestre mai mici panoul se mută sub desen.
+Panoul oferă controlul vitezei, pauză, resetare, amestecare și **Culori**.
+Cele șase butoane ale fețelor sunt ascunse implicit pe laptop și afișate pe
+telefoanele mici. **Fețe: DA/NU** le arată sau le restrânge, iar alegerea se
+salvează. Pe telefon, panoul ocupă 292 de pixeli cu aceste butoane și 196 fără
+ele, față de 326 anterior. Pe laptop, panoul lateral este mai îngust.
+Clic stânga/dreapta pe butoanele fețelor are același efect ca pe centre.
+**Trasee** nu este afișat, iar traseele din salvările mai vechi sunt dezactivate.
 
 Zonele fețelor au fundaluri discret colorate și delimitări fixe, independente
 de culorile pieselor amestecate. Zona selectată cu mouse-ul sau rotită în acel
@@ -248,9 +251,7 @@ La trecerea mouse-ului peste un centru sau buton, un halou alb evidențiază
 toate cele opt cubulețe pe care le va antrena stratul, cu toate suprafețele
 lor colorate, precum și centrul selectat. Haloul rămâne vizibil la rotire.
 Culorile originale rămân complet opace și nemodificate.
-Traseele punctate opționale au cerc la plecare și săgeată la sosire, câte un
-traseu pentru fiecare cubuleț fizic mobil, calculat din transformarea stratului.
-Implicit sunt oprite. Nu se desenează copii sau contururi-fantomă ale pieselor
+Nu se desenează copii sau contururi-fantomă ale pieselor
 destinație, pentru a evita impresia de suprapunere.
 
 [Captură a interfeței](assets/interface-preview.png) ·

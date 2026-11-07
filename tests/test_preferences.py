@@ -21,7 +21,7 @@ class PreferencesTests(unittest.TestCase):
             values = {"fit_mode": "tall", "view_mode": "Cub", "controls_visible": False,
                       "paths": True, "paused": True, "fullscreen": True, "active_mode": "45",
                       "window_size": [1350, 910], "yaw": .8, "pitch": -.3, "search_budget": 75,
-                      "rubik_duration": 2.2, "puzzle45_duration": .4}
+                      "rubik_duration": 2.2, "puzzle45_duration": .4, "face_buttons": False}
             first.save(values, force=True)
             self.assertEqual(PreferencesStore(path).values, values)
             self.assertFalse(path.with_suffix(".tmp").exists())
@@ -94,13 +94,14 @@ class PreferencesTests(unittest.TestCase):
                 run(max_frames=1, session_path=Path(directory) / "puzzle_session.json")
             self.assertEqual(flat.call_args.kwargs["mode"], "tall")
             self.assertIs(flat.call_args.kwargs["animator"], variant)
-            self.assertTrue(flat.call_args.kwargs["show_paths"])
+            self.assertFalse(flat.call_args.kwargs["show_paths"])
             cube.assert_not_called()
             controls.assert_not_called()
             self.assertEqual(classic.duration, 2)
             self.assertEqual(variant.duration, .4)
             self.assertEqual(solver.budget_text, "11")
             restored = PreferencesStore(path).values
+            values["paths"] = False  # Routes have been retired from the UI.
             for key in values:
                 if key in ("yaw", "pitch"):
                     self.assertAlmostEqual(restored[key], values[key])

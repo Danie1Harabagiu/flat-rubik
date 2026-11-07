@@ -9,7 +9,7 @@ from flat_rubik.storage import read_text, write_text
 DEFAULTS = {"fit_mode": "auto", "view_mode": "Ambele", "controls_visible": True,
             "paths": False, "paused": False, "fullscreen": False, "active_mode": "rubik",
             "window_size": [1080, 800], "yaw": -.55, "pitch": .45, "search_budget": 30,
-            "rubik_duration": 1, "puzzle45_duration": 1}
+            "rubik_duration": 1, "puzzle45_duration": 1, "face_buttons": None}
 
 
 def normalized(values):
@@ -23,6 +23,8 @@ def normalized(values):
     for key in ("controls_visible", "paths", "paused", "fullscreen"):
         if type(values.get(key)) is bool:
             result[key] = values[key]
+    if type(values.get("face_buttons")) is bool:
+        result["face_buttons"] = values["face_buttons"]
     for key, low, high in (("yaw", -1e6, 1e6), ("pitch", -1.5, 1.5), ("search_budget", 1, 3600),
                            ("rubik_duration", .2, 3), ("puzzle45_duration", .2, 3)):
         value = values.get(key)

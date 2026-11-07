@@ -13,16 +13,23 @@ from copy import deepcopy
 
 
 class InterfaceTests(unittest.TestCase):
-    def test_main_panel_omits_color_editor_and_routes_buttons(self):
+    def test_main_panel_keeps_editor_and_optional_face_buttons_without_routes(self):
         from flat_rubik.ui import layout
         for size in ((1080, 800), (390, 844), (640, 700), (320, 360)):
             actions = layout(size)[4]
-            self.assertNotIn("edit", actions)
+            self.assertIn("edit", actions)
             self.assertNotIn("paths", actions)
+            self.assertIn("faces", actions)
             self.assertTrue({"pause", "reset", "shuffle", "mode", "fit", "solve"} <= actions.keys())
             editor = layout(size, editing=True)[4]
             self.assertIn("edit", editor)
             self.assertIn("paths", editor)
+        self.assertFalse(layout((1080, 800))[2])
+        expanded = layout((390, 844), face_buttons=True)
+        collapsed = layout((390, 844), face_buttons=False)
+        self.assertEqual(len(expanded[2]), 6)
+        self.assertFalse(collapsed[2])
+        self.assertGreater(collapsed[0].h, expanded[0].h)
 
     def setUp(self):
         from flat_rubik.editor import ColorEditor
@@ -30,6 +37,31 @@ class InterfaceTests(unittest.TestCase):
         isolation = patch("flat_rubik.app.ColorEditor", side_effect=lambda *args, **kwargs: ColorEditor())
         isolation.start()
         self.addCleanup(isolation.stop)
+
+    def test_phone_can_collapse_face_buttons_and_still_open_color_editor(self):
+        import pygame
+        import tempfile
+        from pathlib import Path
+        from flat_rubik.app import run
+        from flat_rubik.editor import ColorEditor
+        from flat_rubik.preferences import PreferencesStore
+        from flat_rubik.ui import layout
+        size = (390, 844)
+        original = pygame.display.set_mode
+        animator = Animator()
+        editor = ColorEditor()
+        actions = layout(size)[4]
+        events = [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["faces"].center, button=1),
+                  pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=layout(size, face_buttons=False)[4]["edit"].center, button=1)]
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("flat_rubik.app.Animator", return_value=animator), \
+                    patch("flat_rubik.app.ColorEditor", return_value=editor), \
+                    patch("pygame.display.set_mode", side_effect=lambda *args: original(size)), \
+                    patch("pygame.event.get", return_value=events):
+                run(max_frames=1, session_path=Path(directory) / "puzzle_session.json")
+            self.assertTrue(editor.editing)
+            settings = PreferencesStore(Path(directory) / "puzzle_settings.json")
+            self.assertIs(settings.values["face_buttons"], False)
 
     def test_speed_change_preserves_progress_and_contour(self):
         animator = Animator(duration=1)

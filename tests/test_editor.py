@@ -178,9 +178,16 @@ class EditorTests(unittest.TestCase):
         before = animator.cube.snapshot()
         slot, point = self.mobile_sample()
         from flat_rubik.geometry import board_point
+        from flat_rubik.flat_view import flat_viewport
         local = board_point(point, 800, 800, inverse=True)
-        shown = board_point(local, 800, 800)
-        click_point = (shown[0], shown[1] * 754 / 800 + 46)
+        area = layout((1080, 800), editing=True)[0].copy()
+        area.y += 46
+        area.h -= 46
+        virtual, destination = flat_viewport(area.size, "auto")
+        scale = virtual[0] / 800
+        shown = board_point((local[0] * scale, local[1] * scale), *virtual)
+        click_point = (area.x + destination.x + shown[0] * destination.w / virtual[0],
+                       area.y + destination.y + shown[1] * destination.h / virtual[1])
         _, _, _, _, actions, _ = layout((1080, 800), editing=True)
         events = [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e, mod=0),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=click_point, button=1),
@@ -221,9 +228,21 @@ class EditorTests(unittest.TestCase):
         editor.resume_draft = True
         animator = Animator()
         actions = layout((1080, 800), editing=True)[4]
+        from flat_rubik.cube_view import view_regions
+        from flat_rubik.flat_view import flat_viewport
+        from flat_rubik.geometry import board_point, rotation_handles
+        area = layout((1080, 800))[0].copy()
+        area.y += 46
+        area.h -= 46
+        circle, _ = view_regions(area, "Ambele")
+        virtual, destination = flat_viewport(circle.size, "auto")
+        right = rotation_handles(*virtual)["rosu"][2]
+        shown = board_point(right, *virtual)
+        click_point = (circle.x + destination.x + shown[0] * destination.w / virtual[0],
+                       circle.y + destination.y + shown[1] * destination.h / virtual[1])
         events = [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e, mod=0),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["pause"].center, button=1),
-                  pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(200, 423), button=1)]
+                  pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=click_point, button=1)]
         with patch("flat_rubik.app.ColorEditor", return_value=editor), patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):
             run(max_frames=1, session_path=None)
         self.assertFalse(editor.editing)

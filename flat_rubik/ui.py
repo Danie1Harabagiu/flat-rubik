@@ -12,48 +12,34 @@ NAMES = {"F": "Rosu", "B": "Portocaliu", "U": "Galben", "R": "Verde", "D": "Alb"
 MIN_DURATION, MAX_DURATION = .2, 3.0
 
 
-def _main_actions(actions, editing, compact):
-    if editing:
-        return actions
-    actions.pop("edit")
-    actions.pop("paths")
-    first = actions["pause"].copy()
-    for i, name in enumerate(("pause", "reset", "shuffle")):
-        rect = first.copy()
-        if compact:
-            rect.x += i * (first.w + 8)
-        else:
-            rect.y += i * 46
-        actions[name] = rect
-    return actions
-
-
-def layout(size, controls_visible=True, editing=False):
+def layout(size, controls_visible=True, editing=False, face_buttons=None):
     w, h = size
     if not controls_visible:
         return pygame.Rect(0, 0, w, h), pygame.Rect(0, 0, 0, 0), {}, pygame.Rect(0, 0, 0, 0), {}, False
-    if w < 600 and h >= 600:
-        panel = pygame.Rect(0, h - 326, w, 326)
-        board = pygame.Rect(0, 0, w, h - 326)
+    phone = w < 600 and h >= 600
+    show_faces = (phone if face_buttons is None else face_buttons) and not editing
+    if phone:
+        panel_height = 292 if show_faces else 196
+        panel = pygame.Rect(0, h - panel_height, w, panel_height)
+        board = pygame.Rect(0, 0, w, h - panel_height)
         x, y = 16, panel.y + 16
         usable = w - 32
         width = (usable - 16) // 3
-        buttons = {face: pygame.Rect(x + (i % 3) * (width + 8), y + 40 + (i // 3) * 52, width, 44)
-                   for i, face in enumerate(NAMES)}
-        slider = pygame.Rect(x + 20, y + 178, usable - 40, 22)
-        actions = {name: pygame.Rect(x + i * (width + 8), y + 210, width, 44)
-                   for i, name in enumerate(("pause", "paths", "reset"))}
-        actions.update(edit=pygame.Rect(w - 188, y - 3, 82, 32),
-                       shuffle=pygame.Rect(w - 98, y - 3, 82, 32),
-                       mode=pygame.Rect(x, y + 266, usable, 36))
-        mode = actions["mode"]
-        mode.w = (usable - 12) // 3
-        actions["fit"] = pygame.Rect(mode.right + 6, mode.y, mode.w, mode.h)
-        actions["solve"] = pygame.Rect(actions["fit"].right + 6, mode.y, usable - 2 * mode.w - 12, mode.h)
-        return board, panel, buttons, slider, _main_actions(actions, editing, True), True
+        buttons = ({face: pygame.Rect(x + (i % 3) * (width + 8), y + 54 + (i // 3) * 48, width, 44)
+                    for i, face in enumerate(NAMES)} if show_faces else {})
+        slider = pygame.Rect(x + 20, y + 26, usable - 40, 18)
+        start = y + (151 if show_faces else 55)
+        rows = ((("pause", "paths", "reset"), ("edit", "shuffle", "faces"), ("mode", "fit", "solve")) if editing else
+                (("pause", "reset", "shuffle"), ("edit", "faces"), ("mode", "fit", "solve")))
+        actions = {}
+        for row, names in enumerate(rows):
+            action_width = (usable - (len(names) - 1) * 8) // len(names)
+            for col, name in enumerate(names):
+                actions[name] = pygame.Rect(x + col * (action_width + 8), start + row * 38, action_width, 32)
+        return board, panel, buttons, slider, actions, True
     if w >= 960 and h >= 780:
-        board = pygame.Rect(0, 0, w - 280, h)
-        panel = pygame.Rect(w - 280, 0, 280, h)
+        board = pygame.Rect(0, 0, w - 240, h)
+        panel = pygame.Rect(w - 240, 0, 240, h)
         compact = False
     else:
         panel_height = min(210, max(1, h - 120))
@@ -65,30 +51,35 @@ def layout(size, controls_visible=True, editing=False):
     buttons = {}
     if compact:
         button_width = max(1, (usable - 25) // 6)
-        for i, face in enumerate(NAMES):
-            buttons[face] = pygame.Rect(x + i * (button_width + 5), y + 35, button_width, 30)
+        if show_faces:
+            for i, face in enumerate(NAMES):
+                buttons[face] = pygame.Rect(x + i * (button_width + 5), y + 35, button_width, 30)
         slider = pygame.Rect(x + 26, y + 102, max(1, usable - 52), 18)
         row = y + 139
-        width = max(1, (usable - 16) // 3)
+        names = ("pause", "paths", "reset") if editing else ("pause", "reset")
+        width = max(1, (usable - (len(names) - 1) * 8) // len(names))
         actions = {name: pygame.Rect(x + i * (width + 8), row, width, 30)
-                   for i, name in enumerate(("pause", "paths", "reset"))}
+                   for i, name in enumerate(names)}
         actions["edit"] = pygame.Rect(x + usable - 172, y - 3, 82, 26)
         actions["shuffle"] = pygame.Rect(x + usable - 86, y - 3, 86, 26)
         actions["mode"] = pygame.Rect(x, y + 173, usable, 20)
+        actions["faces"] = pygame.Rect(x + usable - 78, y + 77, 78, 22)
     else:
-        for i, face in enumerate(NAMES):
-            buttons[face] = pygame.Rect(x + (i % 2) * 128, y + 105 + (i // 2) * 48, 120, 40)
-        slider = pygame.Rect(x + 8, y + 320, usable - 16, 20)
-        actions = {name: pygame.Rect(x, y + 365 + i * 46, usable, 36)
-                   for i, name in enumerate(("pause", "paths", "reset"))}
-        actions["edit"] = pygame.Rect(x, y + 503, usable, 36)
-        actions["shuffle"] = pygame.Rect(x, y + 549, usable, 36)
+        if show_faces:
+            face_width = (usable - 8) // 2
+            for i, face in enumerate(NAMES):
+                buttons[face] = pygame.Rect(x + (i % 2) * (face_width + 8), y + 105 + (i // 2) * 48, face_width, 40)
+        slider = pygame.Rect(x + 8, y + (320 if show_faces else 140), usable - 16, 20)
+        names = ("pause", "paths", "reset", "edit", "shuffle") if editing else ("pause", "reset", "edit", "shuffle")
+        actions = {name: pygame.Rect(x, slider.y + 45 + i * 46, usable, 36)
+                   for i, name in enumerate(names)}
         actions["mode"] = pygame.Rect(x, y + 79, usable, 22)
+        actions["faces"] = pygame.Rect(x, y + 55, usable, 20)
     mode = actions["mode"]
     mode.w = (usable - 12) // 3
     actions["fit"] = pygame.Rect(mode.right + 6, mode.y, mode.w, mode.h)
     actions["solve"] = pygame.Rect(actions["fit"].right + 6, mode.y, usable - 2 * mode.w - 12, mode.h)
-    return board, panel, buttons, slider, _main_actions(actions, editing, compact), compact
+    return board, panel, buttons, slider, actions, compact
 
 
 def visibility_button(size):
@@ -107,9 +98,9 @@ def duration_at(x, slider):
     return MIN_DURATION + fraction * (MAX_DURATION - MIN_DURATION)
 
 
-def render_controls(screen, animator, paused, paths, hovered=None, editor=None, session_message=None, fit_mode="proportional"):
+def render_controls(screen, animator, paused, paths, hovered=None, editor=None, session_message=None, fit_mode="proportional", face_buttons=None):
     editing = editor is not None and editor.editing
-    board, panel, buttons, slider, actions, compact = layout(screen.get_size(), editing=editing)
+    board, panel, buttons, slider, actions, compact = layout(screen.get_size(), editing=editing, face_buttons=face_buttons)
     touch_layout = screen.get_width() < 600 and screen.get_height() >= 600
     pygame.draw.rect(screen, PANEL, panel)
 
@@ -122,10 +113,10 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
 
     x, y = panel.x + 16, panel.y + 16
     variant = getattr(animator, "step_degrees", 90) == 45
-    text("CULORI" if editing else "FLAT RUBIK" if compact else "FLAT RUBIK  |  Alege o fata", (x, y))
+    if not touch_layout:
+        text("CULORI" if editing else "FLAT RUBIK" if compact else "FLAT RUBIK", (x, y))
     if not compact:
         text("Clic pe piesa: culoarea urmatoare." if editing else "Stanga: orar   Dreapta: invers", (x, y + 34), small_font=True)
-        text("Dreapta: inapoi  |  Centre fixe" if editing else "Centrele si butoanele sunt active.", (x, y + 57), small_font=True)
     active = None if editing else animator.current[0] if animator.current else None
     if editing:
         hovered = None
@@ -149,7 +140,7 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
             pygame.draw.circle(screen, CULORI_RGB[FACE_COLORS[face]], (rect.x + 15, rect.centery), 7)
             pygame.draw.circle(screen, TEXT, (rect.x + 15, rect.centery), 7, 1)
             text(NAMES[face] if editing else f"{face}  {NAMES[face]}", (rect.x + 29, rect.y + 12), small_font=True)
-    label_y = y + 151 if touch_layout else y + 77 if compact else y + 275
+    label_y = y if touch_layout else y + 77 if compact else slider.y - 45
     counts = Counter(editor.colors.values()) if editing else {}
     count_label = "  ".join(f"{c}:{counts[color]}" for c, color in zip("RPGVAB", ("rosu", "portocaliu", "galben", "verde", "alb", "albastru"))) if editing else ""
     text(count_label if editing else f"Durata rotatiei: {animator.duration:.1f} s", (x, label_y))
@@ -166,10 +157,10 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
                 line = candidate
         lines.append(line)
         for i, line in enumerate(lines[:2 if compact else 3]):
-            text(line, (x, (y + 175 if touch_layout else y + 101 if compact else y + 300) + i * 17),
+            text(line, (x, (y + 22 if touch_layout else y + 101 if compact else slider.y - 20) + i * (15 if touch_layout else 17)),
                  color=(160, 35, 60) if editor.error else TEXT, small_font=True)
     elif not compact:
-        text("rapid                             lent", (x + 4, y + 300), small_font=True)
+        text("rapid                  lent", (x + 4, slider.y - 20), small_font=True)
     if not editing:
         pygame.draw.line(screen, (166, 140, 187), (slider.left, slider.centery), (slider.right, slider.centery), 5)
     fraction = max(0, min(1, (animator.duration - MIN_DURATION) / (MAX_DURATION - MIN_DURATION)))
@@ -180,7 +171,7 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
                 "paths": "Trasee: DA" if paths else "Trasee: NU", "reset": "Resetare",
                 "edit": "Rubik: culori" if variant else "Culori", "shuffle": "Amesteca",
                 "mode": "Mod: 45°" if variant else "Mod: 90°", "solve": "Rubik: rezolva" if variant else "Rezolvare",
-                "fit": FIT_LABELS[fit_mode]}
+                "fit": FIT_LABELS[fit_mode], "faces": "Fete: DA" if buttons else "Fete: NU"}
     if editing:
         captions.update(pause="Aplica", paths="Anuleaza", reset="Rezolvat", edit="Renunta", shuffle="Random valid")
     for name, rect in actions.items():
@@ -191,7 +182,7 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
             label = pygame.transform.smoothscale(label, (max(1, rect.w - 6), 14))
         screen.blit(label, label.get_rect(center=rect.center))
     if not compact:
-        status_y = y + (603 if editing else 511)
+        status_y = actions["shuffle"].bottom + 18
         text(f"Mutare: {animator.current or '-'}   |   Coada: {animator.pending}", (x, status_y))
         solved = animator.is_solved if variant else animator.cube.solved
         state = "Editezi culorile reale ale cubului." if editing else "Pauza" if paused else "Rotatie in curs" if animator.current else "Rezolvat" if solved else "Puzzle amestecat"
