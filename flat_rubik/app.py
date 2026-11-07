@@ -10,7 +10,8 @@ from flat_rubik.cube import scramble, FACE_COLORS
 from flat_rubik.controls import move_for_click
 from flat_rubik.geometry import center_at, board_point
 from flat_rubik.renderer import draw, BACKGROUND_RGB
-from flat_rubik.ui import layout, duration_at, render_controls
+from flat_rubik.ui import (layout, duration_at, render_controls,
+                           visibility_button, render_visibility_button)
 from flat_rubik.editor import ColorEditor
 from flat_rubik.puzzle45 import Puzzle45
 from flat_rubik.session import SessionStore, SESSION_PATH
@@ -43,6 +44,8 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
     running, paused, paths, dragging, double = True, False, False, False, False
     frames = 0
     active_finger = None
+    controls_visible, fullscreen = True, False
+    windowed_size = size
     while running:
         if browser:
             viewport = (max(320, int(platform.window.innerWidth)), max(360, int(platform.window.innerHeight)))
@@ -65,12 +68,16 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     active_finger = None
                 event = pygame.event.Event(event_type, pos=(round(event.x * screen.get_width()),
                                                             round(event.y * screen.get_height())), button=1)
-            board, panel, buttons, slider, actions, compact = layout(screen.get_size())
+            board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible)
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.VIDEORESIZE:
+            elif event.type == pygame.VIDEORESIZE and not fullscreen:
                 screen = pygame.display.set_mode((max(320, event.w), max(360, event.h)), pygame.RESIZABLE)
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1 and visibility_button(screen.get_size()).collidepoint(event.pos):
+                    controls_visible = not controls_visible
+                    dragging = False
+                    continue
                 action = next((name for name, rect in actions.items() if rect.collidepoint(event.pos)), None)
                 if event.button == 1 and action == "mode":
                     if not editor.editing:
@@ -103,7 +110,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                         editor.randomize()
                 elif event.button == 1 and action == "shuffle":
                     animator.enqueue(scramble())
-                elif event.button == 1 and slider.inflate(18, 16).collidepoint(event.pos):
+                elif event.button == 1 and controls_visible and slider.inflate(18, 16).collidepoint(event.pos):
                     dragging = True
                     animator.set_duration(duration_at(event.pos[0], slider))
                 elif event.button == 1 and action:
@@ -130,7 +137,21 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                 dragging = False
             elif event.type == pygame.KEYDOWN:
                 key = pygame.key.name(event.key).upper()
-                if event.key == pygame.K_e or editor.editing and event.key == pygame.K_ESCAPE:
+                if event.key == pygame.K_h:
+                    controls_visible = not controls_visible
+                    dragging = False
+                elif event.key == pygame.K_F11 and not browser:
+                    if fullscreen:
+                        screen = pygame.display.set_mode(windowed_size, pygame.RESIZABLE)
+                    else:
+                        windowed_size = screen.get_size()
+                        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                    fullscreen = not fullscreen
+                    dragging = False
+                elif event.key == pygame.K_ESCAPE and fullscreen:
+                    screen = pygame.display.set_mode(windowed_size, pygame.RESIZABLE)
+                    fullscreen = False
+                elif event.key == pygame.K_e or editor.editing and event.key == pygame.K_ESCAPE:
                     animator = classic
                     if editor.editing:
                         editor.cancel()
@@ -174,7 +195,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
         if not paused and not editor.editing:
             animator.update(dt)
         session.save(classic, variant)
-        board, panel, buttons, slider, actions, compact = layout(screen.get_size())
+        board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible)
         mouse = pygame.mouse.get_pos()
         hovered = next((f for f, rect in buttons.items() if rect.collidepoint(mouse)), None)
         if board.collidepoint(mouse):
@@ -186,7 +207,9 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
         draw(board_screen, animator=editor_view if editor.editing else animator,
              hovered=None if editor.editing else hovered, show_paths=paths and not editor.editing,
              facelets=editor.colors if editor.editing else None)
-        render_controls(screen, animator, paused, paths, hovered, editor=editor, session_message=session.message)
+        if controls_visible:
+            render_controls(screen, animator, paused, paths, hovered, editor=editor, session_message=session.message)
+        render_visibility_button(screen, controls_visible)
         pygame.display.flip()
         await asyncio.sleep(0)
         frames += 1

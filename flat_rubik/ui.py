@@ -11,8 +11,10 @@ NAMES = {"F": "Rosu", "B": "Portocaliu", "U": "Galben", "R": "Verde", "D": "Alb"
 MIN_DURATION, MAX_DURATION = .2, 3.0
 
 
-def layout(size):
+def layout(size, controls_visible=True):
     w, h = size
+    if not controls_visible:
+        return pygame.Rect(0, 0, w, h), pygame.Rect(0, 0, 0, 0), {}, pygame.Rect(0, 0, 0, 0), {}, False
     if w < 600 and h >= 600:
         panel = pygame.Rect(0, h - 326, w, 326)
         board = pygame.Rect(0, 0, w, h - 326)
@@ -62,6 +64,17 @@ def layout(size):
         actions["shuffle"] = pygame.Rect(x, y + 549, usable, 36)
         actions["mode"] = pygame.Rect(x, y + 79, usable, 22)
     return board, panel, buttons, slider, actions, compact
+
+
+def visibility_button(size):
+    return pygame.Rect(8, 8, 164, 30)
+
+
+def render_visibility_button(screen, visible):
+    rect = visibility_button(screen.get_size())
+    pygame.draw.rect(screen, PANEL, rect, border_radius=7)
+    label = text_surface("Ascunde butoane [H]" if visible else "Arata butoane [H]", 19, TEXT)
+    screen.blit(label, label.get_rect(center=rect.center))
 
 
 def duration_at(x, slider):

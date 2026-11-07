@@ -101,6 +101,8 @@ clic stânga și folosesc pasul modului activ (90° sau 45°).
 | Spațiu | Adaugă 25 de mutări de amestecare în coadă |
 | Home | Resetare imediată; golește coada și animația |
 | Esc | Ieșire |
+| H | Ascunde / afișează panoul de butoane; desenul ocupă spațiul disponibil |
+| F11 | Ecran complet / fereastră pe laptop; Esc revine din ecran complet |
 | P | Pauză / continuare |
 | + / - | Mărește / micșorează durata rotației |
 | E | Deschide editorul „Culori”; în editor renunță la modificări |
@@ -119,6 +121,9 @@ păstrează progresul curent, fără salt. Butonul „Pauză” oprește tempora
 animația pentru a inspecta piesele; „Continuă” reia din același punct.
 Interfața rămâne activă pe durata animației; ținta este 60 FPS.
 Fereastra este redimensionabilă.
+Butonul mic din stânga sus ascunde și afișează panoul inclusiv prin atingere.
+Rotațiile prin săgețile centrelor și comenzile de tastatură rămân disponibile
+când panoul este ascuns.
 
 ## Introducerea culorilor cubului fizic
 
