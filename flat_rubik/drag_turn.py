@@ -12,7 +12,7 @@ from flat_rubik.layer_motion import ease
 class DragTurn:
     threshold = 10
 
-    def __init__(self, animator, point, size, mode):
+    def __init__(self, animator, point, size, mode, zoom=(1, 1)):
         self.start = point
         self.moved = False
         self.preview = None
@@ -21,7 +21,7 @@ class DragTurn:
         self.distance = max(45, min(size) * .22)
         if animator.pending:
             return
-        mapped = flat_pointer(point, size, mode)
+        mapped = flat_pointer(point, size, mode, zoom)
         if not mapped:
             return
         local, virtual = mapped
@@ -39,7 +39,7 @@ class DragTurn:
             slot = slot_at(local, virtual)
             if slot:
                 faces.sort(key=lambda f: FACE_NORMALS[f] != slot[1])
-        _, destination = flat_viewport(size, mode)
+        _, destination = flat_viewport(size, mode, zoom)
 
         def display(p):
             x, y = board_point(p, *virtual)

@@ -21,7 +21,8 @@ class PreferencesTests(unittest.TestCase):
             values = {"fit_mode": "tall", "view_mode": "Cub", "controls_visible": False,
                       "paths": True, "paused": True, "fullscreen": True, "active_mode": "45",
                       "window_size": [1350, 910], "yaw": .8, "pitch": -.3, "search_budget": 75,
-                      "rubik_duration": 2.2, "puzzle45_duration": .4, "face_buttons": False}
+                      "rubik_duration": 2.2, "puzzle45_duration": .4, "face_buttons": False,
+                      "zoom_x": 1.8, "zoom_y": .7, "zoom_axis": "X"}
             first.save(values, force=True)
             self.assertEqual(PreferencesStore(path).values, values)
             self.assertFalse(path.with_suffix(".tmp").exists())

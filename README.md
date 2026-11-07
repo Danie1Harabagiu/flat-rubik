@@ -379,3 +379,17 @@ pastreaza rotirea prin clic; clicul drept pastreaza sensul invers.
 Gestul este disponibil cand animatia anterioara s-a terminat. Editorul de
 culori pastreaza clicurile pentru colorare. In vederea cubului 3D, tragerea
 continua sa schimbe unghiul de observare.
+
+## Zoom pentru Flat Rubik
+
+Bara de pe desen are **-**, **+**, selectorul **XY / X / Y** si **100%**.
+XY modifica ambele dimensiuni; X modifica doar latimea, Y doar inaltimea.
+Zoomul este intre 40% si 300%, centrat pe desen. Pe laptop poti folosi
+rotita mouse-ului peste desen: Shift modifica numai X, Ctrl numai Y.
+Tastele [ si ] micsoreaza/maresc dupa axa selectata; 0 revine la 100%.
+Pe telefon, departeaza sau apropie doua degete pe desen pentru zoom,
+folosind axa selectata (in timpul jocului). In editor foloseste bara de zoom.
+
+Setarile de zoom se salveaza automat. Geometria este desenata direct la
+rezolutia ecranului; selectarea, colorarea si tragerea pieselor folosesc
+aceeasi transformare. Zoomul apartine desenului Flat Rubik.

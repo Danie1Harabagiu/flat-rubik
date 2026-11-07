@@ -91,6 +91,27 @@ def visibility_button(size):
     return pygame.Rect(8, 8, 164, 30)
 
 
+def zoom_buttons(board):
+    if board.w < 80 or board.h < 60:
+        return {}
+    width = min(280, board.w - 12)
+    x, y = board.centerx - width // 2, board.bottom - 34
+    return {name: pygame.Rect(x + round(start * width), y, round(span * width) - 4, 28)
+            for name, start, span in (("out", 0, .15), ("in", .15, .15),
+                                      ("axis", .30, .48), ("reset", .78, .22))}
+
+
+def render_zoom(screen, board, zoom, axis):
+    labels = {"out": "-", "in": "+", "axis": f"{axis} {zoom[0]:.0%}/{zoom[1]:.0%}", "reset": "100%"}
+    for name, rect in zoom_buttons(board).items():
+        pygame.draw.rect(screen, PANEL, rect, border_radius=6)
+        pygame.draw.rect(screen, (120, 85, 150), rect, 1, border_radius=6)
+        label = text_surface(labels[name], 18 if name == "axis" else 21, TEXT)
+        if label.get_width() > rect.w - 4:
+            label = pygame.transform.smoothscale(label, (max(1, rect.w - 4), label.get_height()))
+        screen.blit(label, label.get_rect(center=rect.center))
+
+
 def render_visibility_button(screen, visible):
     rect = visibility_button(screen.get_size())
     pygame.draw.rect(screen, PANEL, rect, border_radius=7)
