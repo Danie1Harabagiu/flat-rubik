@@ -69,7 +69,7 @@ def layout(size, controls_visible=True, editing=False, face_buttons=None):
             face_width = (usable - 8) // 2
             for i, face in enumerate(NAMES):
                 buttons[face] = pygame.Rect(x + (i % 2) * (face_width + 8), y + 105 + (i // 2) * 48, face_width, 40)
-        slider = pygame.Rect(x + 8, y + (320 if show_faces else 140), usable - 16, 20)
+        slider = pygame.Rect(x + 8, y + (320 if show_faces else 160), usable - 16, 20)
         names = ("pause", "paths", "reset", "edit", "shuffle") if editing else ("pause", "reset", "edit", "shuffle")
         actions = {name: pygame.Rect(x, slider.y + 45 + i * 46, usable, 36)
                    for i, name in enumerate(names)}

@@ -13,6 +13,22 @@ from copy import deepcopy
 
 
 class InterfaceTests(unittest.TestCase):
+    def test_duration_label_does_not_overlap_sidebar_buttons(self):
+        import pygame
+        from flat_rubik.ui import layout
+        from flat_rubik.renderer import text_surface
+        pygame.init()
+        try:
+            for faces in (False, True):
+                _, panel, buttons, slider, actions, _ = layout((1080, 800), face_buttons=faces)
+                label = text_surface("Durata rotatiei: 0.2 s", 22, (0, 0, 0))
+                rect = label.get_rect(topleft=(panel.x + 16, slider.y - 45))
+                for name, button in {**buttons, **actions}.items():
+                    self.assertFalse(rect.colliderect(button), (faces, name))
+                self.assertGreaterEqual(rect.top - actions["mode"].bottom, 8)
+        finally:
+            pygame.quit()
+
     def test_main_panel_keeps_editor_and_optional_face_buttons_without_routes(self):
         from flat_rubik.ui import layout
         for size in ((1080, 800), (390, 844), (640, 700), (320, 360)):
