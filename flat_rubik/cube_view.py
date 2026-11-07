@@ -42,8 +42,9 @@ def view_regions(area, mode):
     return pygame.Rect(area.x, area.y, area.w, height), pygame.Rect(area.x, area.y + height, area.w, area.h - height)
 
 
-def draw_cube(surface, animator, yaw=-.55, pitch=.45):
-    w, h = surface.get_size()
+def projected_polygons(size, animator, yaw=-.55, pitch=.45):
+    """Shared geometry for drawing and picking, ordered from back to front."""
+    w, h = size
     scale = min(w / 5.4, max(1, h - 36) / 5.4)
     polygons = []
 
@@ -51,7 +52,7 @@ def draw_cube(surface, animator, yaw=-.55, pitch=.45):
         return rotate_point(rotate_point(point, 1, yaw), 0, pitch)
 
     for cubie in animator.cube.cubies:
-        for normal in FACE_NORMALS.values():
+        for face, normal in FACE_NORMALS.items():
             axis = next(i for i, value in enumerate(normal) if value)
             a, b = (axis + 1) % 3, (axis + 2) % 3
             for inset, color in ((.48, (29, 25, 35)), (.415, CULORI_RGB.get(cubie.stickers.get(normal)))):
@@ -71,8 +72,23 @@ def draw_cube(surface, animator, yaw=-.55, pitch=.45):
                 shade = .72 + .28 * transformed_normal[2]
                 color = tuple(round(channel * shade) for channel in color)
                 polygon = [(w / 2 + p[0] * scale, (h - 24) / 2 - p[1] * scale + 8) for p in points]
-                polygons.append((depth, color, polygon))
-    for _, color, polygon in sorted(polygons, key=lambda item: item[0]):
+                polygons.append((depth, color, polygon, face if normal in cubie.stickers else None))
+    return sorted(polygons, key=lambda item: item[0])
+
+
+def cube_face_at(point, size, animator, yaw=-.55, pitch=.45):
+    for _, _, polygon, face in reversed(projected_polygons(size, animator, yaw, pitch)):
+        sides = []
+        for a, b in zip(polygon, polygon[1:] + polygon[:1]):
+            sides.append((b[0] - a[0]) * (point[1] - a[1]) - (b[1] - a[1]) * (point[0] - a[0]))
+        if all(s >= -1e-6 for s in sides) or all(s <= 1e-6 for s in sides):
+            return face
+    return None
+
+
+def draw_cube(surface, animator, yaw=-.55, pitch=.45):
+    w, h = surface.get_size()
+    for _, color, polygon, _ in projected_polygons((w, h), animator, yaw, pitch):
         pygame.draw.polygon(surface, color, polygon)
-    label = text_surface("Trage pentru a intoarce cubul", 19, (43, 31, 61))
+    label = text_surface("Clic: rotire fata | Trage: vedere", 19, (43, 31, 61))
     surface.blit(label, label.get_rect(midbottom=(w // 2, h - 3)))

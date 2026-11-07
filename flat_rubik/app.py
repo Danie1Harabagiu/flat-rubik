@@ -1,4 +1,5 @@
 ﻿import pygame
+import math
 
 from pathlib import Path
 import asyncio
@@ -10,7 +11,7 @@ from flat_rubik.cube import scramble, FACE_COLORS
 from flat_rubik.controls import move_for_click
 from flat_rubik.geometry import center_at, board_point
 from flat_rubik.renderer import draw, BACKGROUND_RGB, text_surface
-from flat_rubik.cube_view import draw_cube, view_regions
+from flat_rubik.cube_view import draw_cube, view_regions, cube_face_at
 from flat_rubik.ui import (layout, duration_at, render_controls,
                            visibility_button, render_visibility_button)
 from flat_rubik.editor import ColorEditor
@@ -91,8 +92,14 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     view_mode = {"Cerc": "Cub", "Cub": "Ambele", "Ambele": "Cerc"}[view_mode]
                     orbit = None
                     continue
-                if event.button == 1 and cube_rect.collidepoint(event.pos):
-                    orbit = event.pos
+                if event.button in (1, 3) and cube_rect.collidepoint(event.pos):
+                    local = (event.pos[0] - cube_rect.x, event.pos[1] - cube_rect.y)
+                    face = cube_face_at(local, cube_rect.size, animator, yaw, pitch)
+                    if event.button == 3:
+                        if face:
+                            animator.enqueue([face + "'"])
+                    else:
+                        orbit = dict(start=event.pos, last=event.pos, moved=False, face=face)
                     continue
                 action = next((name for name, rect in actions.items() if rect.collidepoint(event.pos)), None)
                 if event.button == 1 and action == "mode":
@@ -148,12 +155,19 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     if move:
                         animator.enqueue([move])
             elif event.type == pygame.MOUSEMOTION and orbit is not None:
-                yaw += (event.pos[0] - orbit[0]) * .009
-                pitch = max(-1.5, min(1.5, pitch + (event.pos[1] - orbit[1]) * .009))
-                orbit = event.pos
+                if math.dist(event.pos, orbit["start"]) > 8:
+                    orbit["moved"] = True
+                if orbit["moved"]:
+                    yaw += (event.pos[0] - orbit["last"][0]) * .009
+                    pitch = max(-1.5, min(1.5, pitch + (event.pos[1] - orbit["last"][1]) * .009))
+                    orbit["last"] = event.pos
             elif event.type == pygame.MOUSEMOTION and dragging:
                 animator.set_duration(duration_at(event.pos[0], slider))
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if (orbit is not None and not orbit["moved"] and orbit["face"]
+                        and math.dist(event.pos, orbit["start"]) <= 8
+                        and cube_rect.collidepoint(event.pos)):
+                    animator.enqueue([orbit["face"]])
                 dragging = False
                 orbit = None
             elif event.type == pygame.KEYDOWN:

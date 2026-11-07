@@ -130,8 +130,10 @@ Vederea **Ambele** afișează cercul și cubul Rubik 3D sincronizate, inclusiv
 în timpul rotațiilor, pauzei și amestecării. Butonul **Vedere** din partea
 de sus comută între Cerc, Cub și Ambele, inclusiv pe telefon. Trage pe cub
 cu mouse-ul sau degetul pentru a vedea celelalte fețe; acest gest schimbă
-doar unghiul de privire. Pentru mutări folosește panoul, săgețile cercului
-sau tastatura. Pe telefon, în Ambele, vederile se așază vertical.
+doar unghiul de privire. Un clic stânga sau o atingere scurtă pe o față a
+cubului o rotește în sens orar; clic dreapta rotește în sens invers.
+Poți folosi și panoul, săgețile cercului sau tastatura.
+Pe telefon, în Ambele, vederile se așază vertical.
 Editorul de culori și puzzle-ul experimental de 45° folosesc cercul;
 vederea 3D reprezintă modul Rubik de 90°.
 
