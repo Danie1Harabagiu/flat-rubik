@@ -353,14 +353,30 @@ class ExactSearch:
             yield self.report(status="budget", detail="Buget epuizat")
 
 
-def search_events(cube, budget, seed=None, cache_dir=None, use_fast_seed=False, clock=time.monotonic):
+def search_events(cube, budget, seed=None, cache_dir=None, use_fast_seed=False, clock=time.monotonic, incumbent=None):
     """Common worker/browser pipeline; budget includes setup and seed search."""
     if not math.isfinite(budget) or budget <= 0:
         raise ValueError("Bugetul trebuie sa fie pozitiv.")
     started = clock()
     engine = ExactSearch(cube, seed=seed, deadline=started + budget, clock=clock)
+
+    def relay(events):
+        previous = seed
+        for report in events:
+            if incumbent is not None and not report.optimal:
+                candidate = incumbent()
+                if candidate is not None and candidate != previous:
+                    previous = candidate
+                    verified = checked_solution(cube, candidate)
+                    if verified is not None and (engine.result.best is None or len(verified) < len(engine.result.best)):
+                        report = engine.report(best=verified)
+                        if len(verified) == report.lower_bound:
+                            yield engine.report(optimal=True, status="done")
+                            return
+            yield report
+
     yield engine.report()
-    yield from engine.search(shallow_only=True)
+    yield from relay(engine.search(shallow_only=True))
     if engine.result.status in ("done", "budget"):
         return
     if use_fast_seed and clock() < engine.deadline:
@@ -388,4 +404,4 @@ def search_events(cube, budget, seed=None, cache_dir=None, use_fast_seed=False, 
         except (ImportError, ValueError, RuntimeError, OSError):
             pass  # The exact search still works without the optional fast seed.
     path = Path(cache_dir) / "qtm-patterns-v1.bin" if cache_dir is not None else None
-    yield from engine.search(cache_path=path)
+    yield from relay(engine.search(cache_path=path))

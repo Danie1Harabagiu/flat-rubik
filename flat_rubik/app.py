@@ -19,6 +19,7 @@ from flat_rubik.puzzle45 import Puzzle45
 from flat_rubik.session import SessionStore, SESSION_PATH
 from flat_rubik.solve_panel import SolvePanel
 from flat_rubik.flat_view import FIT_MODES, draw_flat, flat_pointer
+from flat_rubik.preferences import PreferencesStore
 
 
 def run(max_frames=None, session_path=SESSION_PATH):
@@ -28,12 +29,15 @@ def run(max_frames=None, session_path=SESSION_PATH):
 
 async def run_async(max_frames=None, session_path=SESSION_PATH):
     browser = sys.platform == "emscripten"
+    preferences = PreferencesStore(Path(session_path).with_name("puzzle_settings.json") if session_path else None)
+    settings = preferences.values
     pygame.init()
-    size = (1080, 800)
+    size = tuple(settings["window_size"])
     if browser:
         import platform
         size = (max(320, int(platform.window.innerWidth)), max(360, int(platform.window.innerHeight)))
-    screen = pygame.display.set_mode(size, pygame.RESIZABLE)
+    fullscreen = settings["fullscreen"] and not browser
+    screen = pygame.display.set_mode((0, 0) if fullscreen else size, pygame.FULLSCREEN if fullscreen else pygame.RESIZABLE)
     pygame.display.set_caption("Flat Rubik")
     clock = pygame.time.Clock()
     animator = Animator(duration=1.0)
@@ -44,17 +48,38 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
     variant = Puzzle45(duration=1.0)
     session = SessionStore(session_path)
     session.restore(classic, variant)
+    if "rubik_duration" in preferences.present_keys:
+        classic.set_duration(settings["rubik_duration"])
+    if "puzzle45_duration" in preferences.present_keys:
+        variant.set_duration(settings["puzzle45_duration"])
+    animator = variant if settings["active_mode"] == "45" else classic
     solver = SolvePanel()
+    solver.budget_text = f"{settings['search_budget']:g}"
     editor_view = None
-    running, paused, paths, dragging, double = True, False, False, False, False
+    running, paused, paths, dragging, double = True, settings["paused"], settings["paths"], False, False
     frames = 0
     active_finger = None
-    controls_visible, fullscreen = True, False
-    view_mode = "Ambele"
-    fit_mode = "proportional"
-    yaw, pitch = -.55, .45
+    controls_visible = settings["controls_visible"]
+    view_mode = settings["view_mode"]
+    fit_mode = settings["fit_mode"]
+    yaw, pitch = settings["yaw"], settings["pitch"]
     orbit = None
     windowed_size = size
+
+    def save_preferences(force=False):
+        try:
+            budget = float(solver.budget_text.replace(",", "."))
+            if not math.isfinite(budget) or not 1 <= budget <= 3600:
+                raise ValueError
+        except ValueError:
+            budget = preferences.values["search_budget"]
+        preferences.save({"fit_mode": fit_mode, "view_mode": view_mode, "controls_visible": controls_visible,
+                          "paths": paths, "paused": paused, "fullscreen": fullscreen,
+                          "active_mode": "45" if animator is variant else "rubik",
+                          "window_size": list(windowed_size if fullscreen else screen.get_size()),
+                          "yaw": (yaw + math.pi) % math.tau - math.pi, "pitch": pitch,
+                          "search_budget": budget, "rubik_duration": classic.duration,
+                          "puzzle45_duration": variant.duration}, force=force)
     while running:
         if browser:
             viewport = (max(320, int(platform.window.innerWidth)), max(360, int(platform.window.innerHeight)))
@@ -261,6 +286,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
             animator.update(dt)
         solver.update(classic)
         session.save(classic, variant)
+        save_preferences(force=not dragging and orbit is None)
         playing_solution = solver.visible and solver.docked
         board, panel, buttons, slider, actions, compact = layout(screen.get_size(), controls_visible and not playing_solution)
         area = board.copy()
@@ -286,7 +312,8 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
         if cube_rect.w and cube_rect.h:
             draw_cube(screen.subsurface(cube_rect), animator, yaw, pitch)
         if controls_visible and not playing_solution:
-            render_controls(screen, animator, paused, paths, hovered, editor=editor, session_message=session.message, fit_mode=fit_mode)
+            render_controls(screen, animator, paused, paths, hovered, editor=editor,
+                            session_message=preferences.message or session.message, fit_mode=fit_mode)
         render_visibility_button(screen, controls_visible)
         view_button = pygame.Rect(180, 8, max(1, min(200, screen.get_width() - 188)), 30)
         pygame.draw.rect(screen, (235, 224, 245), view_button, border_radius=7)
@@ -302,4 +329,5 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
             running = False
     solver.close()
     session.save(classic, variant)
+    save_preferences(force=True)
     pygame.quit()

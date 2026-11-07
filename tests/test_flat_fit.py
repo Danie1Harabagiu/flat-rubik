@@ -105,7 +105,7 @@ class FlatFitTests(unittest.TestCase):
                 patch("flat_rubik.app.draw_flat", side_effect=capture_flat), \
                 patch("pygame.event.get", side_effect=batches):
             run(max_frames=4, session_path=None)
-        self.assertEqual(modes, ["wide", "tall", "auto", "proportional"])
+        self.assertEqual(modes, ["proportional", "wide", "tall", "auto"])
         self.assertEqual(animator.cube.snapshot(), before)
         self.assertEqual(len(images), 4)
         self.assertTrue(all(image == images[0] for image in images))

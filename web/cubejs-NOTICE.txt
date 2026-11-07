@@ -1,0 +1,5 @@
+cube.js - MIT licensed
+Source: https://github.com/ldez/cubejs
+Pinned revision: 6b3da493894d9aed54f4c8aafccadbe676e745b5
+Files: lib/cube.js unchanged; lib/solve.js with trailing whitespace removed.
+See cubejs-LICENSE.txt for the full license.

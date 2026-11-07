@@ -62,6 +62,7 @@ Butonul **Forma** sau tasta **T** schimbă între patru opțiuni:
 alungește cu 40%, iar **X/Y** adaptează independent lățimea și înălțimea la
 spațiul disponibil în fereastră. Aceste opțiuni afectează exclusiv desenul
 Flat Rubik. Cubul 3D își păstrează proporțiile și dimensiunea zonei sale.
+Formatul implicit este **X/Y**; după ce alegi alt format, aplicația îl reține.
 Clicurile, săgețile și editorul de culori urmăresc aceeași transformare.
 Contururile, suprafețele și săgețile sunt desenate direct la rezoluția finală,
 prin transformarea coordonatelor; nu se mărește o imagine de rezoluție mică.
@@ -91,12 +92,17 @@ verificați și numărați în rotații de 90°; algoritmul propriu de căutare 
 este cel care certifică minimul. Prima utilizare poate consuma o parte
 semnificativă din buget pentru pregătire; datele se păstrează local în
 `.solver_cache/`, ignorat de Git. Instalează dependențele din `requirements.txt`.
-În browser, căutarea exactă rulează în porții scurte, iar un istoric verificat
-poate furniza o soluție inițială; motorul desktop în două faze nu este încărcat.
+În browser, motorul rapid [cube.js](https://github.com/ldez/cubejs), sub licență
+MIT, rulează local într-un Web Worker. Poate rezolva și cuburi încărcate din
+salvare sau introduse manual, fără istoric de mutări și fără trimiterea
+configurației la un server. Fiecare candidat este verificat pe modelul jocului;
+căutarea exactă continuă în porții scurte pentru a demonstra minimul în buget.
+Fișierele motorului sunt incluse în pachet, cu licența și revizia sursei în `web`.
 
 ## Alegerea modului: Rubik 90° sau Puzzle 45°
 
-Aplicația pornește implicit în **Rubik 90°**, cu mecanica cubului fizic.
+La prima pornire este ales **Rubik 90°**, cu mecanica cubului fizic;
+la deschiderile următoare se reia modul ales ultima dată.
 Butonul **Mod: 90°** comută la **Puzzle 45°** și invers.
 Cele două jocuri au stări separate; schimbarea modului nu resetează pozițiile.
 
@@ -118,10 +124,18 @@ lucrează cu modul Rubik; în modul nou, butonul **Rubik: culori** te duce acolo
 
 După fiecare mutare terminată, aplicația salvează automat ambele jocuri în
 `puzzle_session.json`, separat de configurația manuală din `cube_colors.json`.
-La următoarea deschidere restaurează pozițiile și vitezele, pornind în Rubik.
-Pentru a continua varianta de 45°, apasă butonul de mod.
+La următoarea deschidere restaurează pozițiile, vitezele și modul ales.
 O animație în curs și mutările încă în coadă nu sunt salvate: se păstrează
 ultima poziție completă. Fișierul sesiunii este local și ignorat de Git.
+
+Preferințele sunt salvate separat în `puzzle_settings.json`: forma desenului
+(implicit X/Y), vederea Cerc/Cub/Ambele, modul 90°/45°, butoanele vizibile,
+traseele, pauza, vitezele ambelor jocuri, orientarea camerei și bugetul de
+căutare. Pe calculator se rețin și dimensiunea ferestrei și ecranul complet.
+În browser se folosește spațiul ferestrei curente, iar preferințele se păstrează
+în stocarea locală a browserului, separat pentru fiecare site și dispozitiv.
+Setările se salvează automat la modificare; fișierul nu este inclus în Git sau
+în versiunea publicată. Salvările mai vechi fără preferințe pornesc în X/Y.
 
 ## Comenzi
 

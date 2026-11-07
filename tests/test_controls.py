@@ -54,15 +54,18 @@ class MouseControlsTests(unittest.TestCase):
         from flat_rubik.cube_view import view_regions
         from flat_rubik.ui import layout
         from flat_rubik.geometry import board_point
+        from flat_rubik.flat_view import flat_viewport
         area = layout((1080, 800))[0].copy()
         area.y += 46
         area.h -= 46
         circle, _ = view_regions(area, "Ambele")
+        virtual, destination = flat_viewport(circle.size, "auto")
         for face, (x, y) in self.centers.items():
-            scale = min(circle.size) / 800
-            local = (circle.w / 2 + (x - 400) * scale, circle.h / 2 + (y - 400) * scale)
-            shown = board_point(local, *circle.size)
-            point = (circle.x + shown[0], circle.y + shown[1])
+            scale = min(virtual) / 800
+            local = (virtual[0] / 2 + (x - 400) * scale, virtual[1] / 2 + (y - 400) * scale)
+            shown = board_point(local, *virtual)
+            point = (circle.x + destination.x + shown[0] * destination.w / virtual[0],
+                     circle.y + destination.y + shown[1] * destination.h / virtual[1])
             for button in (1, 3):
                 events.append(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=point, button=button))
                 expected.append(face + ("'" if button == 3 else ""))

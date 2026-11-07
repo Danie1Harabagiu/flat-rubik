@@ -2,10 +2,12 @@ from collections import deque
 from copy import deepcopy
 import os
 from pathlib import Path
+import json
 import random
 import tempfile
 import time
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
@@ -155,6 +157,40 @@ class SolverTests(unittest.TestCase):
         self.assertFalse(job.busy)
         self.assertEqual(job.result.status, "budget")
         self.assertIsNone(job.process)
+
+    def test_browser_worker_seed_is_verified_and_merged_into_exact_search(self):
+        cube = Cube()
+        moves = scramble(25, random.Random(103))
+        cube.apply(moves)
+        candidate = [inverse(move) for move in reversed(moves)]
+        calls = []
+        replies = [{"candidates": [["R"], candidate], "status": "done"}]
+        bridge = SimpleNamespace(
+            startJson=lambda job, payload: calls.append((job, json.loads(payload))),
+            pollJson=lambda job: json.dumps(replies.pop(0) if replies else {"candidates": [], "status": "done"}),
+            cancel=lambda job: calls.append(("cancel", job)))
+        job = SearchJob(browser=True, cache_dir=None)
+        with patch("flat_rubik.solve_job.sys", SimpleNamespace(platform="emscripten")), \
+                patch("platform.window", SimpleNamespace(flatRubikSolver=bridge), create=True):
+            try:
+                job.start(cube, 3)  # No history seed.
+                limit = time.monotonic() + .3
+                while job.result.best is None and time.monotonic() < limit:
+                    job.poll()
+                self.assertEqual(job.result.best, checked_solution(cube, candidate))
+                self.assertFalse(job.result.optimal)
+                self.assertEqual(len(calls[0][1]), 6)
+            finally:
+                job.cancel()
+        self.assertEqual(calls[-1][0], "cancel")
+
+    def test_external_candidate_can_only_certify_optimum_when_lower_bound_matches(self):
+        cube = Cube()
+        cube.move("R2")
+        result = list(search_events(cube, 1, incumbent=lambda: ("R", "R")))[-1]
+        self.assertTrue(result.optimal)
+        self.assertEqual(result.best, ("R", "R"))
+        self.assertEqual(result.lower_bound, 2)
 
 
 class SolvePanelTests(unittest.TestCase):

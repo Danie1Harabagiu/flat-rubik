@@ -1,5 +1,6 @@
 """Package only game source, never local saves or repository metadata."""
 from pathlib import Path
+import hashlib
 import shutil
 import subprocess
 import sys
@@ -27,6 +28,14 @@ def build():
     destination.mkdir(exist_ok=True)
     for name in ("index.html", "favicon.png", "mobile.apk", "mobile.tar.gz", ".nojekyll"):
         shutil.copy2(output / name, destination / name)
+    assets = ("solver-client.js", "solver-worker.js", "cube-core.js", "cube-solve.js",
+              "cubejs-LICENSE.txt", "cubejs-NOTICE.txt")
+    version = hashlib.sha256(b"".join((ROOT / "web" / name).read_bytes() for name in assets)).hexdigest()[:16]
+    for name in assets:
+        shutil.copy2(ROOT / "web" / name, destination / name)
+    index = destination / "index.html"
+    index.write_text(index.read_text(encoding="utf-8").replace('src="solver-client.js"',
+                     f'src="solver-client.js?v={version}"'), encoding="utf-8")
     print(f"Web output: {destination}")
 
 

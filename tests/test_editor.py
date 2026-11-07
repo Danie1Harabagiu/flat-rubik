@@ -179,9 +179,8 @@ class EditorTests(unittest.TestCase):
         slot, point = self.mobile_sample()
         from flat_rubik.geometry import board_point
         local = board_point(point, 800, 800, inverse=True)
-        scale = 754 / 800
-        shown = board_point((400 + (local[0] - 400) * scale, 377 + (local[1] - 400) * scale), 800, 754)
-        click_point = (shown[0], shown[1] + 46)
+        shown = board_point(local, 800, 800)
+        click_point = (shown[0], shown[1] * 754 / 800 + 46)
         _, _, _, _, actions, _ = layout((1080, 800))
         events = [pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["edit"].center, button=1),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=click_point, button=1),

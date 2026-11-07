@@ -1,10 +1,12 @@
 """Cancellable desktop process, or time-sliced browser search."""
 from dataclasses import replace
+from copy import deepcopy
+import json
 import math
 import sys
 import time
 
-from flat_rubik.solver import CACHE_DIR, SearchResult, checked_solution, search_events
+from flat_rubik.solver import CACHE_DIR, SearchResult, checked_solution, search_events, facelet_string, framed_cube
 
 
 def _worker(cube, deadline, seed, output, cache_dir):
@@ -36,6 +38,10 @@ class SearchJob:
         self.process = self.output = self.events = None
         self.started = 0
         self.budget = 30
+        self.bridge = None
+        self.browser_id = None
+        self.browser_best = None
+        self.source_cube = None
 
     def start(self, cube, budget, seed=None):
         if not math.isfinite(budget) or not 1 <= budget <= 3600:
@@ -46,7 +52,11 @@ class SearchJob:
         self.result = SearchResult(best=seed)
         self.busy = True
         if self.browser:
-            self.events = search_events(cube, budget, seed, cache_dir=self.cache_dir)
+            self.source_cube = deepcopy(cube)
+            self.browser_best = seed
+            self._start_browser_seed(cube)
+            self.events = search_events(cube, budget, seed, cache_dir=self.cache_dir,
+                                        incumbent=lambda: self.browser_best)
         else:
             import multiprocessing
             context = multiprocessing.get_context("spawn")
@@ -69,6 +79,7 @@ class SearchJob:
         if not self.busy:
             return self.result
         if self.events is not None:
+            self._poll_browser_seed()
             until = time.monotonic() + .003
             while time.monotonic() < until:
                 try:
@@ -99,8 +110,44 @@ class SearchJob:
             self.result = replace(self.result, status="budget", elapsed=elapsed, detail="Buget epuizat")
         return self.result
 
+    def _start_browser_seed(self, cube):
+        if sys.platform != "emscripten":
+            return  # Desktop unit tests also exercise cooperative search.
+        try:
+            import platform
+            self.bridge = platform.window.flatRubikSolver
+            self.browser_id = f"solve-{time.monotonic_ns()}"
+            frames = []
+            for axis, turns in ((0, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2)):
+                framed, back = framed_cube(cube, axis, turns)
+                frames.append({"facelets": facelet_string(framed), "back": back})
+            self.bridge.startJson(self.browser_id, json.dumps(frames))
+        except Exception:
+            self.bridge = self.browser_id = None
+
+    def _poll_browser_seed(self):
+        if self.bridge is None:
+            return
+        try:
+            payload = json.loads(str(self.bridge.pollJson(self.browser_id)))
+            if not payload:
+                return
+            for moves in payload.get("candidates", []):
+                verified = checked_solution(self.source_cube, moves)
+                if verified is not None and (self.browser_best is None or len(verified) < len(self.browser_best)):
+                    self.browser_best = verified
+                    self.result = replace(self.result, best=verified)
+        except Exception:
+            pass  # A worker failure does not disable exact search or a valid seed.
+
     def _stop(self):
         self.busy = False
+        if self.bridge is not None:
+            try:
+                self.bridge.cancel(self.browser_id)
+            except Exception:
+                pass
+        self.bridge = self.browser_id = None
         if self.process is not None:
             if self.process.is_alive():
                 self.process.terminate()

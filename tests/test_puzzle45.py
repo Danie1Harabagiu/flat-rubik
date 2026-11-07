@@ -170,7 +170,7 @@ class Puzzle45Tests(unittest.TestCase):
         self.assertEqual(variant.current, "F")
         self.assertIsNone(classic.current)
         variant.update(1)
-        # A new application run always starts in Rubik, irrespective of the prior mode.
+        # Without saved preferences, a new application run starts in Rubik.
         with patch("flat_rubik.app.Animator", return_value=classic), patch("flat_rubik.app.Puzzle45", return_value=variant), \
                 patch("flat_rubik.app.ColorEditor", return_value=ColorEditor()), \
                 patch("pygame.event.get", return_value=[pygame.event.Event(pygame.KEYDOWN, key=pygame.K_r, mod=0)]):
