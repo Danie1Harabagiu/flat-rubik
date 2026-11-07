@@ -68,6 +68,7 @@ class MouseControlsTests(unittest.TestCase):
                      circle.y + destination.y + shown[1] * destination.h / virtual[1])
             for button in (1, 3):
                 events.append(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=point, button=button))
+                events.append(pygame.event.Event(pygame.MOUSEBUTTONUP, pos=point, button=button))
                 expected.append(face + ("'" if button == 3 else ""))
         events.append(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(0, 0), button=1))
         with patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):

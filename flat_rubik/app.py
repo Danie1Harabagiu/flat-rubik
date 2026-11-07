@@ -22,6 +22,7 @@ from flat_rubik.flat_view import FIT_MODES, draw_flat, flat_pointer
 from flat_rubik.preferences import PreferencesStore
 from flat_rubik.camera_capture import CameraSession
 from flat_rubik.state import facelets
+from flat_rubik.drag_turn import DragTurn
 
 
 def run(max_frames=None, session_path=SESSION_PATH):
@@ -68,6 +69,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
     fit_mode = settings["fit_mode"]
     yaw, pitch = settings["yaw"], settings["pitch"]
     orbit = None
+    flat_drag = None
     windowed_size = size
 
     def save_preferences(force=False):
@@ -88,6 +90,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
         if browser:
             viewport = (max(320, int(platform.window.innerWidth)), max(360, int(platform.window.innerHeight)))
             if screen.get_size() != viewport:
+                flat_drag = None
                 screen = pygame.display.set_mode(viewport, pygame.RESIZABLE)
         dt = min(.1, clock.tick(0 if browser else 60) / 1000)
         for event in pygame.event.get():
@@ -106,6 +109,11 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     active_finger = None
                 event = pygame.event.Event(event_type, pos=(round(event.x * screen.get_width()),
                                                             round(event.y * screen.get_height())), button=1)
+            if event.type in (pygame.KEYDOWN, pygame.VIDEORESIZE, pygame.WINDOWFOCUSLOST, pygame.QUIT):
+                flat_drag = None
+            if event.type == pygame.WINDOWFOCUSLOST:
+                active_finger = None
+                orbit, dragging = None, False
             if camera.active and event.type != pygame.QUIT:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE or event.type == pygame.MOUSEBUTTONDOWN and camera.bridge is None:
                     camera.close()
@@ -127,6 +135,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
             elif event.type == pygame.VIDEORESIZE and not fullscreen:
                 screen = pygame.display.set_mode((max(320, event.w), max(360, event.h)), pygame.RESIZABLE)
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                flat_drag = None
                 if event.button == 1 and visibility_button(screen.get_size()).collidepoint(event.pos):
                     controls_visible = not controls_visible
                     dragging = False
@@ -209,8 +218,16 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                         local = (event.pos[0] - board.x, event.pos[1] - board.y)
                         mapped = flat_pointer(local, board.size, fit_mode)
                         move = move_for_click(mapped[0], event.button, mapped[1]) if mapped else None
+                        if event.button == 1 and not animator.pending:
+                            candidate = DragTurn(animator, local, board.size, fit_mode)
+                            if candidate.candidates:
+                                flat_drag = (candidate, board.copy(), move)
+                                continue
                     if move:
                         animator.enqueue([move])
+            elif event.type == pygame.MOUSEMOTION and flat_drag is not None:
+                gesture, drag_board, _ = flat_drag
+                gesture.motion((event.pos[0] - drag_board.x, event.pos[1] - drag_board.y))
             elif event.type == pygame.MOUSEMOTION and orbit is not None:
                 if math.dist(event.pos, orbit["start"]) > 8:
                     orbit["moved"] = True
@@ -221,6 +238,14 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
             elif event.type == pygame.MOUSEMOTION and dragging:
                 animator.set_duration(duration_at(event.pos[0], slider))
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if flat_drag is not None:
+                    gesture, drag_board, tap_move = flat_drag
+                    point = event.pos[0] - drag_board.x, event.pos[1] - drag_board.y
+                    if gesture.release(point):
+                        paused = False
+                    elif not gesture.moved and tap_move and drag_board.collidepoint(event.pos):
+                        animator.enqueue([tap_move])
+                    flat_drag = None
                 if (orbit is not None and not orbit["moved"] and orbit["face"]
                         and math.dist(event.pos, orbit["start"]) <= 8
                         and cube_rect.collidepoint(event.pos)):
@@ -310,7 +335,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                 solver.start(classic)
         if solver.visible and (solver.autoplay or solver.step_requested):
             paused = False
-        if not paused and not editor.editing and not camera.active:
+        if not paused and not editor.editing and not camera.active and flat_drag is None:
             animator.update(dt)
         if not camera.active:
             solver.update(classic)
@@ -330,16 +355,19 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
             mapped = flat_pointer((mouse[0] - board.x, mouse[1] - board.y), board.size, fit_mode)
             color = center_at(mapped[0], *mapped[1]) if mapped else None
             hovered = next((f for f, c in FACE_COLORS.items() if c == color), None)
+        if flat_drag is not None:
+            hovered = flat_drag[0].face or hovered
         if solver.visible:
             hovered = None
+        draw_animator = flat_drag[0].preview if flat_drag and flat_drag[0].preview else animator
         screen.fill(BACKGROUND_RGB)
         if board.w and board.h:
             board_screen = screen.subsurface(board)
-            draw_flat(board_screen, mode=fit_mode, animator=editor_view if editor.editing else animator,
+            draw_flat(board_screen, mode=fit_mode, animator=editor_view if editor.editing else draw_animator,
                  hovered=None if editor.editing else hovered, show_paths=paths and not editor.editing,
                  facelets=editor.colors if editor.editing else None)
         if cube_rect.w and cube_rect.h:
-            draw_cube(screen.subsurface(cube_rect), animator, yaw, pitch)
+            draw_cube(screen.subsurface(cube_rect), draw_animator, yaw, pitch)
         if controls_visible and not playing_solution:
             render_controls(screen, animator, paused, paths, hovered, editor=editor,
                             session_message=preferences.message or session.message, fit_mode=fit_mode, face_buttons=face_buttons)

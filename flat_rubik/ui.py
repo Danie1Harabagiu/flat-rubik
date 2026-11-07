@@ -192,7 +192,7 @@ def render_controls(screen, animator, paused, paths, hovered=None, editor=None, 
         solved = animator.is_solved if variant else animator.cube.solved
         state = "Editezi culorile reale ale cubului." if editing else "Pauza" if paused else "Rotatie in curs" if animator.current else "Rezolvat" if solved else "Puzzle amestecat"
         text(state, (x, status_y + 25))
-        lines = ("Clicuri repetate: schimba culoarea", "Ctrl+Z: anuleaza ultima culoare", "Enter: aplica | Esc: renunta", "Random valid: configuratie posibila") if editing else ("45°: orice fata, fara aliniere." if variant else "Piesele raman unite in rotatie.", "P: pauza | +/-: durata", "Spatiu: amestecare", "Home: reset | Esc: iesire", session_message or "Salvare automata dupa mutare.")
+        lines = ("Clicuri repetate: schimba culoarea", "Ctrl+Z: anuleaza ultima culoare", "Enter: aplica | Esc: renunta", "Random valid: configuratie posibila") if editing else ("45°: orice fata, fara aliniere." if variant else "Trage piesele pentru rotire.", "P: pauza | +/-: durata", "Spatiu: amestecare", "Home: reset | Esc: iesire", session_message or "Salvare automata dupa mutare.")
         for i, line in enumerate(lines):
             text(line, (x, status_y + 50 + i * 19), small_font=True)
     return board

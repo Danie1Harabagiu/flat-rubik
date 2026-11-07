@@ -366,3 +366,16 @@ Pe desktop se deschide o fila locala de browser; configuratia revine in joc.
 Camera porneste numai dupa apasarea butonului de pornire si se opreste dupa
 capturi sau anulare. Imaginile sunt procesate local, nu sunt incarcate pe server
 si nu sunt salvate. Recunoasterea poate necesita corectii in lumina dificila.
+
+## Rotire prin tragere
+
+In desenul Flat Rubik poti apasa o piesa sau un centru si trage cu degetul
+sau cu butonul stang al mouse-ului tinut apasat. Directia tragerii alege fata
+si sensul; zona antrenata se evidentiaza, iar piesele urmaresc gestul.
+La eliberare se completeaza o singura mutare: 90 de grade in modul Rubik,
+45 de grade in puzzle-ul de 45 de grade. O atingere scurta pe centru
+pastreaza rotirea prin clic; clicul drept pastreaza sensul invers.
+
+Gestul este disponibil cand animatia anterioara s-a terminat. Editorul de
+culori pastreaza clicurile pentru colorare. In vederea cubului 3D, tragerea
+continua sa schimbe unghiul de observare.
