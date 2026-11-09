@@ -10,7 +10,7 @@ DEFAULTS = {"fit_mode": "auto", "view_mode": "Ambele", "controls_visible": True,
             "paths": False, "paused": False, "fullscreen": False, "active_mode": "rubik",
             "window_size": [1080, 800], "yaw": -.55, "pitch": .45, "search_budget": 30,
             "rubik_duration": 1, "puzzle45_duration": 1, "face_buttons": None, "zoom_x": 1, "zoom_y": 1,
-            "unwrapped_zoom_x": 1, "unwrapped_zoom_y": 1, "zoom_axis": "XY"}
+            "equal_pieces": True, "unwrapped_zoom_x": 1, "unwrapped_zoom_y": 1, "zoom_axis": "XY"}
 
 
 def normalized(values):
@@ -27,7 +27,7 @@ def normalized(values):
         result["view_mode"] = "Desf\u0103\u0219urat"
     elif values.get("view_mode") == "Desfasurat + Cub":
         result["view_mode"] = "Desf\u0103\u0219urat + Cub"
-    for key in ("controls_visible", "paths", "paused", "fullscreen"):
+    for key in ("controls_visible", "paths", "paused", "fullscreen", "equal_pieces"):
         if type(values.get(key)) is bool:
             result[key] = values[key]
     if type(values.get("face_buttons")) is bool:

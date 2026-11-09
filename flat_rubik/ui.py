@@ -91,11 +91,11 @@ def visibility_button(size):
     return pygame.Rect(8, 8, 164, 30)
 
 
-def zoom_buttons(board, mode=None, zoom=(1, 1), fit_mode=None):
+def zoom_buttons(board, mode=None, zoom=(1, 1), fit_mode=None, equal_pieces=True):
     if board.w < 80 or board.h < 60:
         return {}
     if mode == UNWRAPPED:
-        _, destination = flat_viewport(board.size, mode, zoom, fit_mode)
+        _, destination = flat_viewport(board.size, mode, zoom, fit_mode, equal_pieces=equal_pieces)
         y = board.y + destination.bottom + 8
         y = max(board.y + 2, min(y, board.bottom - 30))
         width = min(280, board.w - 12)
@@ -103,7 +103,7 @@ def zoom_buttons(board, mode=None, zoom=(1, 1), fit_mode=None):
         return {name: pygame.Rect(x + round(start * width), y,
                                   max(1, round(span * width) - 4), 28)
                 for name, start, span in (("out", 0, .15), ("in", .15, .15),
-                                          ("axis", .30, .48), ("reset", .78, .22))}
+                                          ("pieces", .30, .48), ("reset", .78, .22))}
     width = min(280, board.w - 12)
     x, y = board.centerx - width // 2, board.bottom - 34
     return {name: pygame.Rect(x + round(start * width), y, round(span * width) - 4, 28)
@@ -111,12 +111,13 @@ def zoom_buttons(board, mode=None, zoom=(1, 1), fit_mode=None):
                                       ("axis", .30, .48), ("reset", .78, .22))}
 
 
-def render_zoom(screen, board, zoom, axis, mode=None, fit_mode=None):
-    labels = {"out": "-", "in": "+", "axis": f"{axis} {zoom[0]:.0%}/{zoom[1]:.0%}", "reset": "100%"}
-    for name, rect in zoom_buttons(board, mode, zoom, fit_mode).items():
+def render_zoom(screen, board, zoom, axis, mode=None, fit_mode=None, equal_pieces=True):
+    labels = {"out": "-", "in": "+", "axis": f"{axis} {zoom[0]:.0%}/{zoom[1]:.0%}", "reset": "100%",
+              "pieces": "Piese: egale" if equal_pieces else "Piese: variate"}
+    for name, rect in zoom_buttons(board, mode, zoom, fit_mode, equal_pieces=equal_pieces).items():
         pygame.draw.rect(screen, PANEL, rect, border_radius=6)
         pygame.draw.rect(screen, (120, 85, 150), rect, 1, border_radius=6)
-        label = text_surface(labels[name], 18 if name == "axis" else 21, TEXT)
+        label = text_surface(labels[name], 18 if name in ("axis", "pieces") else 21, TEXT)
         if label.get_width() > rect.w - 4:
             label = pygame.transform.smoothscale(label, (max(1, rect.w - 4), label.get_height()))
         screen.blit(label, label.get_rect(center=rect.center))

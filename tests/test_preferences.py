@@ -23,7 +23,7 @@ class PreferencesTests(unittest.TestCase):
                       "window_size": [1350, 910], "yaw": .8, "pitch": -.3, "search_budget": 75,
                       "rubik_duration": 2.2, "puzzle45_duration": .4, "face_buttons": False,
                       "zoom_x": 1.8, "zoom_y": .7, "zoom_axis": "X",
-                      "unwrapped_zoom_x": 1.2, "unwrapped_zoom_y": 1.2}
+                      "equal_pieces": False, "unwrapped_zoom_x": 1.2, "unwrapped_zoom_y": 1.2}
             first.save(values, force=True)
             self.assertEqual(PreferencesStore(path).values, values)
             self.assertFalse(path.with_suffix(".tmp").exists())

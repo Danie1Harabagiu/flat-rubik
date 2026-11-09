@@ -18,25 +18,35 @@ UNWRAPPED_CUBE = "Desf\u0103\u0219urat + Cub"
 UNWRAP_CUT = math.radians(45)
 UNWRAP_RADIUS = ORANGE_RADII[-1]
 UNWRAP_SIZE = (800, 800)
-UNWRAP_COLUMNS = 12
-UNWRAP_RADIAL_UNITS = 7
-UNWRAP_CELL_FRACTION = 1 / UNWRAP_COLUMNS
+UNWRAP_COLUMNS = 8
+UNWRAP_RADIAL_UNITS = 8
+UNWRAP_CELL_FRACTION = 1 / (2 * UNWRAP_COLUMNS)
 UNWRAP_RADIAL_STOPS = ((0, 0), (44, 1), (48, 1), (88, 2),
-                       (128, 3), (132, 3), (204, 4), (208, 4),
-                       (246, 5), (296, 6), (300, 6), (330, 7))
+                       (128, 3), (132, 3), (204, 5), (208, 5),
+                       (246, 6), (296, 7), (300, 7), (330, 8))
 
 
-def _radius_to_unit(radius):
+def _unwrap_layout(equal_pieces):
+    if equal_pieces:
+        return UNWRAP_COLUMNS, UNWRAP_RADIAL_UNITS, UNWRAP_CELL_FRACTION, UNWRAP_RADIAL_STOPS
+    return (12, 7, 1 / 12,
+            ((0, 0), (44, 1), (48, 1), (88, 2), (128, 3), (132, 3),
+             (204, 4), (208, 4), (246, 5), (296, 6), (300, 6), (330, 7)))
+
+
+def _radius_to_unit(radius, equal_pieces=True):
+    columns, radial_units, cell_fraction, radial_stops = _unwrap_layout(equal_pieces)
     radius = max(0, min(UNWRAP_RADIUS, radius))
-    for (r0, u0), (r1, u1) in zip(UNWRAP_RADIAL_STOPS, UNWRAP_RADIAL_STOPS[1:]):
+    for (r0, u0), (r1, u1) in zip(radial_stops, radial_stops[1:]):
         if radius <= r1:
             return u0 + (radius - r0) * (u1 - u0) / (r1 - r0)
-    return UNWRAP_RADIAL_UNITS
+    return radial_units
 
 
-def _unit_to_radius(unit):
-    unit = max(0, min(UNWRAP_RADIAL_UNITS, unit))
-    for (r0, u0), (r1, u1) in zip(UNWRAP_RADIAL_STOPS, UNWRAP_RADIAL_STOPS[1:]):
+def _unit_to_radius(unit, equal_pieces=True):
+    columns, radial_units, cell_fraction, radial_stops = _unwrap_layout(equal_pieces)
+    unit = max(0, min(radial_units, unit))
+    for (r0, u0), (r1, u1) in zip(radial_stops, radial_stops[1:]):
         if unit <= u1:
             return r0 + (unit - u0) * (r1 - r0) / (u1 - u0)
     return UNWRAP_RADIUS
@@ -46,9 +56,10 @@ def _wrap_angle(angle):
     return (angle + math.pi) % math.tau - math.pi
 
 
-@lru_cache(maxsize=1)
-def _row_angle_maps():
-    """Pack each radial sticker row into twelve gap-free square units."""
+@lru_cache(maxsize=2)
+def _row_angle_maps(equal_pieces=True):
+    """Pack sticker rows for either equal cubies or the original sticker widths."""
+    columns, radial_units, cell_fraction, radial_stops = _unwrap_layout(equal_pieces)
     rows = [[] for _ in range(5)]
     for cubie in Cube().cubies:
         if cubie.kind == "center":
@@ -58,12 +69,13 @@ def _row_angle_maps():
         for normal in cubie.stickers:
             if normal[2]:
                 row = 0 if z == 1 else 4
-                units = 2 if cubie.kind == "corner" else 1
+                units = 1 if equal_pieces or cubie.kind != "corner" else 2
                 center, span = base, 2 * SPOKE_HALF_ANGLE
             else:
                 row = {1: 1, 0: 2, -1: 3}[z]
                 units, center, span = 1, base, 2 * SPOKE_HALF_ANGLE
                 if x and y:
+                    units = .5 if equal_pieces else 1
                     face_angle = math.atan2(-normal[1], normal[0])
                     side = -1 if _wrap_angle(face_angle - base) < 0 else 1
                     center = base + side * SPOKE_HALF_ANGLE / 2
@@ -93,19 +105,20 @@ def _row_angle_maps():
             start, span, units = crossing[0]
             end = start + span - math.tau
             intervals.extend(((0, end, 0, units / 2),
-                              (start, math.tau, UNWRAP_COLUMNS - units / 2, UNWRAP_COLUMNS)))
-            expected = UNWRAP_COLUMNS - units / 2
+                              (start, math.tau, columns - units / 2, columns)))
+            expected = columns - units / 2
         else:
-            expected = UNWRAP_COLUMNS
+            expected = columns
         if abs(cursor - expected) > 1e-7:
             raise ValueError(f"Unpacked color row: expected {expected} units, got {cursor}")
         result.append(tuple(sorted(intervals, key=lambda e: e[0])))
     return tuple(result)
 
 
-def _angle_to_units(angle, row):
+def _angle_to_units(angle, row, equal_pieces=True):
+    columns, radial_units, cell_fraction, radial_stops = _unwrap_layout(equal_pieces)
     position = (angle - UNWRAP_CUT) % math.tau
-    intervals = _row_angle_maps()[row]
+    intervals = _row_angle_maps(equal_pieces=equal_pieces)[row]
     previous = None
     for a0, a1, u0, u1 in intervals:
         if a0 <= position <= a1:
@@ -114,12 +127,13 @@ def _angle_to_units(angle, row):
         if position < a0:
             return previous[3] if previous is not None else 0
         previous = (a0, a1, u0, u1)
-    return UNWRAP_COLUMNS
+    return columns
 
 
-def _units_to_angle(units, row):
-    units = max(0, min(UNWRAP_COLUMNS, units))
-    for a0, a1, u0, u1 in _row_angle_maps()[row]:
+def _units_to_angle(units, row, equal_pieces=True):
+    columns, radial_units, cell_fraction, radial_stops = _unwrap_layout(equal_pieces)
+    units = max(0, min(columns, units))
+    for a0, a1, u0, u1 in _row_angle_maps(equal_pieces=equal_pieces)[row]:
         if u0 <= units <= u1 and u1 > u0:
             fraction = (units - u0) / (u1 - u0)
             return UNWRAP_CUT + a0 + fraction * (a1 - a0)
@@ -140,16 +154,18 @@ def _row_for_radius(radius):
     return 4
 
 
-def _unwrapped_destination(size, zoom=(1, 1), fit_mode="proportional"):
+def _unwrapped_destination(size, zoom=(1, 1), fit_mode="proportional", equal_pieces=True):
+    columns, radial_units, cell_fraction, radial_stops = _unwrap_layout(equal_pieces)
     width, height = size
-    grid_ratio = UNWRAP_COLUMNS / UNWRAP_RADIAL_UNITS
+    # Each mobile cubie spans two radial units and one angular column.
+    grid_ratio = (2 if equal_pieces else 1) * columns / radial_units
     ratios = {"proportional": grid_ratio, "wide": grid_ratio * 1.4,
               "tall": grid_ratio / 1.4,
               "auto": (width * .96) / max(1, height * .72)}
     if fit_mode not in ratios:
         raise ValueError("Unknown unwrapped fit mode")
     ratio = ratios[fit_mode]
-    rect_width = min(width * .96 / (1 + 2 * UNWRAP_CELL_FRACTION),
+    rect_width = min(width * .96 / (1 + 2 * cell_fraction),
                      height * .72 * ratio)
     rect_height = rect_width / ratio
     rect = pygame.Rect(0, 0, max(1, round(rect_width * zoom[0])),
@@ -158,8 +174,9 @@ def _unwrapped_destination(size, zoom=(1, 1), fit_mode="proportional"):
     return rect
 
 
-def _unwrapped_polygon(points, destination, size=UNWRAP_SIZE):
+def _unwrapped_polygon(points, destination, size=UNWRAP_SIZE, equal_pieces=True):
     """Project a facelet onto packed square units and repeat it across the cut."""
+    columns, radial_units, cell_fraction, radial_stops = _unwrap_layout(equal_pieces)
     cx, cy = size[0] / 2, size[1] / 2
     radii = [math.hypot(x - cx, y - cy) for x, y in points]
     if not radii:
@@ -167,7 +184,7 @@ def _unwrapped_polygon(points, destination, size=UNWRAP_SIZE):
     # Circular source contours are rounded to pixels. Snap their radial edges
     # back to the shared stops before selecting a row or projecting a band.
     def snapped(radius):
-        return next((stop for stop, _ in UNWRAP_RADIAL_STOPS
+        return next((stop for stop, _ in radial_stops
                      if abs(radius - stop) <= .75), radius)
 
     inner, outer = min(map(snapped, radii)), max(map(snapped, radii))
@@ -178,9 +195,9 @@ def _unwrapped_polygon(points, destination, size=UNWRAP_SIZE):
         radius = snapped(math.hypot(dx, dy))
         angle = math.atan2(dy, dx)
         row = _row_for_radius(max(inner + inset, min(outer - inset, radius)))
-        u = _angle_to_units(angle, row) / UNWRAP_COLUMNS
+        u = _angle_to_units(angle, row, equal_pieces=equal_pieces) / columns
         mapped.append((destination.x + u * destination.w,
-                       destination.y + (1 - _radius_to_unit(radius) / UNWRAP_RADIAL_UNITS) * destination.h))
+                       destination.y + (1 - _radius_to_unit(radius, equal_pieces=equal_pieces) / radial_units) * destination.h))
     if not mapped:
         return ()
     continuous = []
@@ -198,38 +215,40 @@ def _unwrapped_polygon(points, destination, size=UNWRAP_SIZE):
                  for repeat in (-1, 0, 1))
 
 
-def unwrapped_screen_point(point, destination, size=UNWRAP_SIZE):
+def unwrapped_screen_point(point, destination, size=UNWRAP_SIZE, equal_pieces=True):
+    columns, radial_units, cell_fraction, radial_stops = _unwrap_layout(equal_pieces)
     cx, cy = size[0] / 2, size[1] / 2
     dx, dy = point[0] - cx, point[1] - cy
     radius = math.hypot(dx, dy)
     row = _row_for_radius(radius)
-    u = _angle_to_units(math.atan2(dy, dx), row) / UNWRAP_COLUMNS
+    u = _angle_to_units(math.atan2(dy, dx), row, equal_pieces=equal_pieces) / columns
     return (destination.x + u * destination.w,
-            destination.y + (1 - _radius_to_unit(radius) / UNWRAP_RADIAL_UNITS) * destination.h)
+            destination.y + (1 - _radius_to_unit(radius, equal_pieces=equal_pieces) / radial_units) * destination.h)
 
 
-def unwrapped_pointer(point, size, zoom=(1, 1), fit_mode="proportional"):
-    destination = _unwrapped_destination(size, zoom, fit_mode)
-    cell = destination.w / UNWRAP_COLUMNS
+def unwrapped_pointer(point, size, zoom=(1, 1), fit_mode="proportional", equal_pieces=True):
+    columns, radial_units, cell_fraction, radial_stops = _unwrap_layout(equal_pieces)
+    destination = _unwrapped_destination(size, zoom, fit_mode, equal_pieces=equal_pieces)
+    cell = destination.w * cell_fraction
     middle = pygame.Rect(destination.x - math.ceil(cell),
-                         round(destination.y + destination.h / 7),
+                         round(destination.y + destination.h / radial_units),
                          destination.w + 2 * math.ceil(cell),
-                         round(destination.h * 5 / 7))
+                         round(destination.h * (radial_units - 2) / radial_units))
     if not destination.collidepoint(point) and not middle.collidepoint(point):
         return None
-    u = ((point[0] - destination.x) / destination.w * UNWRAP_COLUMNS) % UNWRAP_COLUMNS
+    u = ((point[0] - destination.x) / destination.w * columns) % columns
     v = (point[1] - destination.y) / destination.h
-    radius = _unit_to_radius((1 - v) * UNWRAP_RADIAL_UNITS)
+    radius = _unit_to_radius((1 - v) * radial_units, equal_pieces=equal_pieces)
     row = _row_for_radius(radius)
-    angle = _units_to_angle(u, row)
+    angle = _units_to_angle(u, row, equal_pieces=equal_pieces)
     return (UNWRAP_SIZE[0] / 2 + radius * math.cos(angle),
             UNWRAP_SIZE[1] / 2 + radius * math.sin(angle)), UNWRAP_SIZE
 
 
-def _spaced_unwrapped(points, destination, gap, outline=None):
+def _spaced_unwrapped(points, destination, gap, outline=None, equal_pieces=True):
     """Inset a whole cubie, using the same affine map for all its stickers."""
-    polygons = _unwrapped_polygon(points, destination)
-    boundaries = _unwrapped_polygon(outline, destination) if outline is not None else polygons
+    polygons = _unwrapped_polygon(points, destination, equal_pieces=equal_pieces)
+    boundaries = _unwrapped_polygon(outline, destination, equal_pieces=equal_pieces) if outline is not None else polygons
     bounds = [(min(x for x, _ in p), min(y for _, y in p),
                max(x for x, _ in p), max(y for _, y in p)) for p in boundaries]
     result = []
@@ -245,17 +264,18 @@ def _spaced_unwrapped(points, destination, gap, outline=None):
 
 
 def draw_unwrapped(surface, animator, hovered=None, show_paths=False, facelets=None,
-                   zoom=(1, 1), fit_mode="proportional"):
+                   zoom=(1, 1), fit_mode="proportional", equal_pieces=True):
     """Draw the circular board as a periodic rectangle with a visible cut seam."""
-    destination = _unwrapped_destination(surface.get_size(), zoom, fit_mode)
+    columns, radial_units, cell_fraction, radial_stops = _unwrap_layout(equal_pieces)
+    destination = _unwrapped_destination(surface.get_size(), zoom, fit_mode, equal_pieces=equal_pieces)
     surface.fill(BACKGROUND_RGB)
     previous_clip = surface.get_clip()
     surface.set_clip(destination)
     # The central disk and outer orange ring become bands and retain their width.
-    red_y = round(destination.y + (1 - _radius_to_unit(RED_RADIUS) / UNWRAP_RADIAL_UNITS) * destination.h)
-    orange_y = round(destination.y + (1 - _radius_to_unit(ORANGE_RADII[0]) / UNWRAP_RADIAL_UNITS) * destination.h)
-    gap = max(1, round(min(destination.w / UNWRAP_COLUMNS,
-                                destination.h / UNWRAP_RADIAL_UNITS) * .025))
+    red_y = round(destination.y + (1 - _radius_to_unit(RED_RADIUS, equal_pieces=equal_pieces) / radial_units) * destination.h)
+    orange_y = round(destination.y + (1 - _radius_to_unit(ORANGE_RADII[0], equal_pieces=equal_pieces) / radial_units) * destination.h)
+    gap = max(1, round(min(destination.w / columns,
+                                (2 if equal_pieces else 1) * destination.h / radial_units) * .025))
     half_gap = math.ceil(gap / 2)
     pygame.draw.rect(surface, CULORI_RGB["rosu"],
                      pygame.Rect(destination.x, red_y + half_gap, destination.w,
@@ -266,8 +286,8 @@ def draw_unwrapped(surface, animator, hovered=None, show_paths=False, facelets=N
 
     line_width = max(1, round(min(destination.size) / 420))
     # The repeated cut cubie is drawn in full at both ends, including all
-    # stickers. Only the middle five rows extend beyond the center bands.
-    cell = math.ceil(destination.w / UNWRAP_COLUMNS)
+    # stickers. Only the mobile rows extend beyond the center bands.
+    cell = math.ceil(destination.w * cell_fraction)
     middle = pygame.Rect(destination.x - cell, orange_y,
                          destination.w + 2 * cell, red_y - orange_y)
     surface.set_clip(previous_clip.clip(middle))
@@ -276,7 +296,7 @@ def draw_unwrapped(surface, animator, hovered=None, show_paths=False, facelets=N
         if color in ("rosu", "portocaliu") or shape["tip"] != "poligon":
             continue
         rgb = CULORI_RGB[color]
-        for polygon in _spaced_unwrapped(shape["puncte"], destination, gap):
+        for polygon in _spaced_unwrapped(shape["puncte"], destination, gap, equal_pieces=equal_pieces):
             pygame.draw.polygon(surface, rgb, polygon)
             pygame.draw.polygon(surface, OUTLINE_RGB, polygon, line_width)
 
@@ -291,16 +311,16 @@ def draw_unwrapped(surface, animator, hovered=None, show_paths=False, facelets=N
                        if hovered and hasattr(animator, "highlighted_cubies") else set())
         for cubie_id in highlighted:
             outline = outlines[cubie_id]
-            polygons = _spaced_unwrapped(outline, destination, gap)
+            polygons = _spaced_unwrapped(outline, destination, gap, equal_pieces=equal_pieces)
             for polygon in polygons:
                 pygame.draw.polygon(surface, (255, 255, 255), polygon, line_width + 2)
         for key, (color, points) in shapes.items():
             cubie_id = positions.get(key[0]) if isinstance(key[0], tuple) else key[0]
-            polygons = _spaced_unwrapped(points, destination, gap, outlines.get(cubie_id))
+            polygons = _spaced_unwrapped(points, destination, gap, outlines.get(cubie_id), equal_pieces=equal_pieces)
             for polygon in polygons:
                 pygame.draw.polygon(surface, CULORI_RGB[color], polygon)
         for cubie_id, outline in outlines.items():
-            polygons = _spaced_unwrapped(outline, destination, gap)
+            polygons = _spaced_unwrapped(outline, destination, gap, equal_pieces=equal_pieces)
             for polygon in polygons:
                 pygame.draw.polygon(surface, OUTLINE_RGB, polygon, line_width)
         if show_paths and animator.target is not None:
@@ -308,8 +328,8 @@ def draw_unwrapped(surface, animator, hovered=None, show_paths=False, facelets=N
                       layer_paths(animator.cube, animator.current, *UNWRAP_SIZE))
             for route in routes:
                 for start, end in zip(route, route[1:]):
-                    a = unwrapped_screen_point(start, destination)
-                    b = unwrapped_screen_point(end, destination)
+                    a = unwrapped_screen_point(start, destination, equal_pieces=equal_pieces)
+                    b = unwrapped_screen_point(end, destination, equal_pieces=equal_pieces)
                     if b[0] - a[0] > destination.w / 2:
                         b = (b[0] - destination.w, b[1])
                     elif a[0] - b[0] > destination.w / 2:
@@ -327,15 +347,15 @@ def draw_unwrapped(surface, animator, hovered=None, show_paths=False, facelets=N
     for color, shape in geometrie_centre(*UNWRAP_SIZE).items():
         if color == "rosu":
             point = (destination.centerx, destination.y +
-                     (1 - _radius_to_unit(RED_RADIUS / 2) / UNWRAP_RADIAL_UNITS) * destination.h)
+                     (1 - _radius_to_unit(RED_RADIUS / 2, equal_pieces=equal_pieces) / radial_units) * destination.h)
         elif color == "portocaliu":
             radius = (ORANGE_RADII[0] + ORANGE_RADII[-1]) / 2
             point = (destination.centerx, destination.y +
-                     (1 - _radius_to_unit(radius) / UNWRAP_RADIAL_UNITS) * destination.h)
+                     (1 - _radius_to_unit(radius, equal_pieces=equal_pieces) / radial_units) * destination.h)
         else:
             points = shape["puncte"]
             center = tuple(sum(p[i] for p in points) / len(points) for i in (0, 1))
-            point = unwrapped_screen_point(center, destination)
+            point = unwrapped_screen_point(center, destination, equal_pieces=equal_pieces)
         centers.append(point)
     marker_radius = max(3, min(8, round(destination.h * .035)))
     for point in centers:
@@ -363,9 +383,9 @@ def _base_viewport(size, mode="proportional"):
     return (quality_side, quality_side), destination
 
 
-def flat_viewport(size, mode="proportional", zoom=(1, 1), fit_mode=None):
+def flat_viewport(size, mode="proportional", zoom=(1, 1), fit_mode=None, equal_pieces=True):
     if mode == UNWRAPPED:
-        return UNWRAP_SIZE, _unwrapped_destination(size, zoom, fit_mode or "proportional")
+        return UNWRAP_SIZE, _unwrapped_destination(size, zoom, fit_mode or "proportional", equal_pieces=equal_pieces)
     virtual, destination = _base_viewport(size, mode)
     # Some source arcs round sample coordinates. Generate those at the enlarged
     # size too, so magnification does not enlarge their rounding steps.
@@ -377,10 +397,10 @@ def flat_viewport(size, mode="proportional", zoom=(1, 1), fit_mode=None):
     return virtual, destination
 
 
-def flat_pointer(point, size, mode="proportional", zoom=(1, 1), fit_mode=None):
+def flat_pointer(point, size, mode="proportional", zoom=(1, 1), fit_mode=None, equal_pieces=True):
     if mode == UNWRAPPED:
-        return unwrapped_pointer(point, size, zoom, fit_mode or "proportional")
-    virtual, destination = flat_viewport(size, mode, zoom)
+        return unwrapped_pointer(point, size, zoom, fit_mode or "proportional", equal_pieces=equal_pieces)
+    virtual, destination = flat_viewport(size, mode, zoom, equal_pieces=equal_pieces)
     if not destination.collidepoint(point):
         return None
     local = ((point[0] - destination.x) * virtual[0] / destination.w,
@@ -388,14 +408,14 @@ def flat_pointer(point, size, mode="proportional", zoom=(1, 1), fit_mode=None):
     return board_point(local, *virtual, inverse=True), virtual
 
 
-def draw_flat(surface, mode="proportional", zoom=(1, 1), fit_mode=None, **kwargs):
+def draw_flat(surface, mode="proportional", zoom=(1, 1), fit_mode=None, equal_pieces=True, **kwargs):
     if mode == UNWRAPPED:
-        draw_unwrapped(surface, zoom=zoom, fit_mode=fit_mode or "proportional", **kwargs)
+        draw_unwrapped(surface, zoom=zoom, fit_mode=fit_mode or "proportional", **kwargs, equal_pieces=equal_pieces)
         return
     if mode == "proportional" and zoom == (1, 1):
         draw(surface, **kwargs)
         return
-    virtual, destination = flat_viewport(surface.get_size(), mode, zoom)
+    virtual, destination = flat_viewport(surface.get_size(), mode, zoom, equal_pieces=equal_pieces)
     def affine(point):
         return (destination.x + point[0] * destination.w / virtual[0],
                 destination.y + point[1] * destination.h / virtual[1])

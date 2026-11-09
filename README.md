@@ -393,3 +393,9 @@ folosind axa selectata (in timpul jocului). In editor foloseste bara de zoom.
 Setarile de zoom se salveaza automat. Geometria este desenata direct la
 rezolutia ecranului; selectarea, colorarea si tragerea pieselor folosesc
 aceeasi transformare. Zoomul apartine desenului Flat Rubik.
+
+## Dimensiunea pieselor în vederea desfășurată
+
+În vederea **Desfășurat** sau **Desfășurat + Cub**, butonul de sub desen
+**Piese: egale / variate** comută între piese de aceeași dimensiune și
+proporțiile anterioare. Alegerea se salvează automat și păstrează starea cubului.

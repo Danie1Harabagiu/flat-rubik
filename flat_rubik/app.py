@@ -69,6 +69,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
     fit_mode = settings["fit_mode"]
     zoom_x, zoom_y, zoom_axis = settings["zoom_x"], settings["zoom_y"], settings["zoom_axis"]
     unwrapped_zoom_x, unwrapped_zoom_y = settings["unwrapped_zoom_x"], settings["unwrapped_zoom_y"]
+    equal_pieces = settings["equal_pieces"]
     fingers, pinch = {}, None
     yaw, pitch = settings["yaw"], settings["pitch"]
     orbit = None
@@ -96,7 +97,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                           "search_budget": budget, "rubik_duration": classic.duration,
                           "puzzle45_duration": variant.duration, "face_buttons": face_buttons, "zoom_x": zoom_x, "zoom_y": zoom_y,
                           "unwrapped_zoom_x": unwrapped_zoom_x, "unwrapped_zoom_y": unwrapped_zoom_y,
-                          "zoom_axis": zoom_axis}, force=force)
+                          "zoom_axis": zoom_axis, "equal_pieces": equal_pieces}, force=force)
     def flat_mode():
         return UNWRAPPED if view_mode in (UNWRAPPED, UNWRAPPED_CUBE) and animator is not variant else fit_mode
 
@@ -206,10 +207,12 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     set_zoom(1.12 ** max(-10, min(10, event.y)), axis)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 flat_drag = None
-                zoom_action = next((key for key, rect in zoom_buttons(board, flat_mode(), active_zoom(), fit_mode).items()
+                zoom_action = next((key for key, rect in zoom_buttons(board, flat_mode(), active_zoom(), fit_mode, equal_pieces=equal_pieces).items()
                                     if rect.collidepoint(event.pos)), None) if controls_visible else None
                 if event.button == 1 and zoom_action:
-                    if zoom_action == "axis":
+                    if zoom_action == "pieces":
+                        equal_pieces = not equal_pieces
+                    elif zoom_action == "axis":
                         if flat_mode() == UNWRAPPED:
                             zoom_axis = "XY"
                         else:
@@ -272,7 +275,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     dragging = False
                 elif editor.editing:
                     if board.collidepoint(event.pos):
-                        mapped = flat_pointer((event.pos[0] - board.x, event.pos[1] - board.y), board.size, flat_mode(), active_zoom(), fit_mode)
+                        mapped = flat_pointer((event.pos[0] - board.x, event.pos[1] - board.y), board.size, flat_mode(), active_zoom(), fit_mode, equal_pieces=equal_pieces)
                         if mapped:
                             local, virtual = mapped
                             paint_editor(local, event.button, virtual)
@@ -308,10 +311,10 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     move = face + ("'" if inverse else "") if face else None
                     if board.collidepoint(event.pos):
                         local = (event.pos[0] - board.x, event.pos[1] - board.y)
-                        mapped = flat_pointer(local, board.size, flat_mode(), active_zoom(), fit_mode)
+                        mapped = flat_pointer(local, board.size, flat_mode(), active_zoom(), fit_mode, equal_pieces=equal_pieces)
                         move = move_for_click(mapped[0], event.button, mapped[1]) if mapped else None
                         if event.button == 1 and not animator.pending:
-                            candidate = DragTurn(animator, local, board.size, flat_mode(), active_zoom(), fit_mode)
+                            candidate = DragTurn(animator, local, board.size, flat_mode(), active_zoom(), fit_mode, equal_pieces=equal_pieces)
                             if candidate.candidates:
                                 flat_drag = (candidate, board.copy(), move)
                                 continue
@@ -322,7 +325,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                 gesture.motion((event.pos[0] - drag_board.x, event.pos[1] - drag_board.y))
             elif event.type == pygame.MOUSEMOTION and editor.editing and editor_painting:
                 local = (event.pos[0] - board.x, event.pos[1] - board.y)
-                mapped = flat_pointer(local, board.size, flat_mode(), active_zoom(), fit_mode) if board.collidepoint(event.pos) else None
+                mapped = flat_pointer(local, board.size, flat_mode(), active_zoom(), fit_mode, equal_pieces=equal_pieces) if board.collidepoint(event.pos) else None
                 if mapped:
                     paint_editor(mapped[0], 1, mapped[1])
             elif event.type == pygame.MOUSEMOTION and orbit is not None:
@@ -463,7 +466,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
         mouse = pygame.mouse.get_pos()
         hovered = next((f for f, rect in buttons.items() if rect.collidepoint(mouse)), None)
         if board.collidepoint(mouse):
-            mapped = flat_pointer((mouse[0] - board.x, mouse[1] - board.y), board.size, flat_mode(), active_zoom(), fit_mode)
+            mapped = flat_pointer((mouse[0] - board.x, mouse[1] - board.y), board.size, flat_mode(), active_zoom(), fit_mode, equal_pieces=equal_pieces)
             color = center_at(mapped[0], *mapped[1]) if mapped else None
             hovered = next((f for f, c in FACE_COLORS.items() if c == color), None)
         if flat_drag is not None:
@@ -474,7 +477,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
         screen.fill(BACKGROUND_RGB)
         if board.w and board.h:
             board_screen = screen.subsurface(board)
-            draw_flat(board_screen, mode=flat_mode(), zoom=active_zoom(), fit_mode=fit_mode, animator=editor_view if editor.editing else draw_animator,
+            draw_flat(board_screen, mode=flat_mode(), zoom=active_zoom(), fit_mode=fit_mode, equal_pieces=equal_pieces, animator=editor_view if editor.editing else draw_animator,
                  hovered=None if editor.editing else hovered, show_paths=paths and not editor.editing,
                  facelets=editor.colors if editor.editing else None)
         if cube_rect.w and cube_rect.h:
@@ -483,7 +486,7 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
             render_controls(screen, animator, paused, paths, hovered, editor=editor,
                             session_message=preferences.message or session.message, fit_mode=fit_mode, face_buttons=face_buttons)
         if controls_visible and not solver.visible:
-            render_zoom(screen, board, active_zoom(), zoom_axis, flat_mode(), fit_mode)
+            render_zoom(screen, board, active_zoom(), zoom_axis, flat_mode(), fit_mode, equal_pieces=equal_pieces)
         render_visibility_button(screen, controls_visible)
         view_button = pygame.Rect(180, 8, max(1, min(280, screen.get_width() - 188)), 30)
         pygame.draw.rect(screen, (235, 224, 245), view_button, border_radius=7)
