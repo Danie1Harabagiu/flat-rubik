@@ -254,8 +254,8 @@ def draw_unwrapped(surface, animator, hovered=None, show_paths=False, facelets=N
     # The central disk and outer orange ring become bands and retain their width.
     red_y = round(destination.y + (1 - _radius_to_unit(RED_RADIUS) / UNWRAP_RADIAL_UNITS) * destination.h)
     orange_y = round(destination.y + (1 - _radius_to_unit(ORANGE_RADII[0]) / UNWRAP_RADIAL_UNITS) * destination.h)
-    gap = max(3, round(min(destination.w / UNWRAP_COLUMNS,
-                                destination.h / UNWRAP_RADIAL_UNITS) * .055))
+    gap = max(1, round(min(destination.w / UNWRAP_COLUMNS,
+                                destination.h / UNWRAP_RADIAL_UNITS) * .025))
     half_gap = math.ceil(gap / 2)
     pygame.draw.rect(surface, CULORI_RGB["rosu"],
                      pygame.Rect(destination.x, red_y + half_gap, destination.w,
