@@ -284,7 +284,7 @@ def draw_unwrapped(surface, animator, hovered=None, show_paths=False, facelets=N
                      pygame.Rect(destination.x, destination.y, destination.w,
                                  orange_y - destination.y - half_gap))
 
-    line_width = max(2, round(min(destination.size) / 210))
+    line_width = max(3, round(min(destination.size) / 80))
     # The repeated cut cubie is drawn in full at both ends, including all
     # stickers. Only the mobile rows extend beyond the center bands.
     cell = math.ceil(destination.w * cell_fraction)
@@ -358,10 +358,11 @@ def draw_unwrapped(surface, animator, hovered=None, show_paths=False, facelets=N
             point = unwrapped_screen_point(center, destination, equal_pieces=equal_pieces)
         centers.append(point)
     marker_radius = max(3, min(8, round(destination.h * .035)))
+    marker_width = max(1, round(line_width / 3))
     for point in centers:
         center = tuple(round(value) for value in point)
-        pygame.draw.circle(surface, (255, 255, 255), center, marker_radius + 2, max(1, line_width))
-        pygame.draw.circle(surface, OUTLINE_RGB, center, marker_radius, max(1, line_width))
+        pygame.draw.circle(surface, (255, 255, 255), center, marker_radius + 2, marker_width)
+        pygame.draw.circle(surface, OUTLINE_RGB, center, marker_radius, marker_width)
     surface.set_clip(previous_clip)
 
 

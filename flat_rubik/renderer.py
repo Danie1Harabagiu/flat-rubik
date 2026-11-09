@@ -169,7 +169,7 @@ def draw(ecran, timp=0, animator=None, hovered=None, show_paths=False, facelets=
     forme = geometrie_centre(latime, inaltime)
     scale = min(latime, inaltime) / 800
     stroke_scale = min(ecran.get_size()) / 800
-    outline_width = max(2, round(4 * stroke_scale))
+    outline_width = max(3, round(12 * stroke_scale))
     selected = hovered or (animator.current[0] if animator is not None and animator.current else None)
     draw_zones(ecran, selected, coordinate_size, transform)
 
