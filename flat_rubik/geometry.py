@@ -169,6 +169,7 @@ def geometrie_centre(latime, inaltime):
                 raza_externa,
                 unghi - deschidere / 2,
                 unghi + deschidere / 2,
+                segmente=max(40, round(40 * scara)),
             ),
         }
 

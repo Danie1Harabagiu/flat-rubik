@@ -4,7 +4,7 @@ from collections import Counter
 
 from flat_rubik.cube import FACE_COLORS
 from flat_rubik.renderer import CULORI_RGB, text_surface, draw_rotation_arrow
-from flat_rubik.flat_view import FIT_LABELS
+from flat_rubik.flat_view import FIT_LABELS, UNWRAPPED, flat_viewport
 
 TEXT = (43, 31, 61)
 PANEL = (235, 224, 245)
@@ -91,9 +91,19 @@ def visibility_button(size):
     return pygame.Rect(8, 8, 164, 30)
 
 
-def zoom_buttons(board):
+def zoom_buttons(board, mode=None, zoom=(1, 1), fit_mode=None):
     if board.w < 80 or board.h < 60:
         return {}
+    if mode == UNWRAPPED:
+        _, destination = flat_viewport(board.size, mode, zoom, fit_mode)
+        y = board.y + destination.bottom + 8
+        y = max(board.y + 2, min(y, board.bottom - 30))
+        width = min(280, board.w - 12)
+        x = board.centerx - width // 2
+        return {name: pygame.Rect(x + round(start * width), y,
+                                  max(1, round(span * width) - 4), 28)
+                for name, start, span in (("out", 0, .15), ("in", .15, .15),
+                                          ("axis", .30, .48), ("reset", .78, .22))}
     width = min(280, board.w - 12)
     x, y = board.centerx - width // 2, board.bottom - 34
     return {name: pygame.Rect(x + round(start * width), y, round(span * width) - 4, 28)
@@ -101,9 +111,9 @@ def zoom_buttons(board):
                                       ("axis", .30, .48), ("reset", .78, .22))}
 
 
-def render_zoom(screen, board, zoom, axis):
+def render_zoom(screen, board, zoom, axis, mode=None, fit_mode=None):
     labels = {"out": "-", "in": "+", "axis": f"{axis} {zoom[0]:.0%}/{zoom[1]:.0%}", "reset": "100%"}
-    for name, rect in zoom_buttons(board).items():
+    for name, rect in zoom_buttons(board, mode, zoom, fit_mode).items():
         pygame.draw.rect(screen, PANEL, rect, border_radius=6)
         pygame.draw.rect(screen, (120, 85, 150), rect, 1, border_radius=6)
         label = text_surface(labels[name], 18 if name == "axis" else 21, TEXT)

@@ -52,7 +52,8 @@ def slot_polygon(position, normal, width, height):
                 end = angle
             else:
                 start = angle
-    return sector_inel(cx, cy, inner * scale, outer * scale, start, end, segmente=24)
+    return sector_inel(cx, cy, inner * scale, outer * scale, start, end,
+                       segmente=max(24, round(24 * scale)))
 
 
 def mobile_shapes(cube, width, height):
@@ -68,4 +69,5 @@ def cubie_polygon(position, width, height):
     scale = min(width, height) / 800
     angle = math.atan2(-y, x)
     return sector_inel(width / 2, height / 2, radii[0] * scale, radii[-1] * scale,
-                       angle - SPOKE_HALF_ANGLE, angle + SPOKE_HALF_ANGLE, segmente=48)
+                       angle - SPOKE_HALF_ANGLE, angle + SPOKE_HALF_ANGLE,
+                       segmente=max(48, round(48 * scale)))

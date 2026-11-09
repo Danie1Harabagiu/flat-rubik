@@ -31,10 +31,15 @@ def animated_point(point, position, animator):
 def view_regions(area, mode):
     """Keep the circle's hit testing in its own coordinates."""
     empty = pygame.Rect(area.x, area.y, 0, 0)
-    if mode == "Cerc":
+    if mode in ("Cerc", "Desf\u0103\u0219urat"):
         return area.copy(), empty
     if mode == "Cub":
         return empty, area.copy()
+    if mode == "Desf\u0103\u0219urat + Cub":
+        strip_height = min(max(240, round(area.w * .28)), max(1, area.h - 120))
+        strip = pygame.Rect(area.x, area.y, area.w, strip_height)
+        cube = pygame.Rect(area.x, strip.bottom, area.w, max(1, area.bottom - strip.bottom))
+        return strip, cube
     if area.w >= area.h:
         width = area.w // 2
         return pygame.Rect(area.x, area.y, width, area.h), pygame.Rect(area.x + width, area.y, area.w - width, area.h)

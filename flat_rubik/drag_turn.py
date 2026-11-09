@@ -4,7 +4,7 @@ import math
 
 from flat_rubik.cube import FACE_COLORS, FACE_NORMALS
 from flat_rubik.editor import contains, slot_at
-from flat_rubik.flat_view import flat_pointer, flat_viewport
+from flat_rubik.flat_view import flat_pointer, flat_viewport, UNWRAPPED, unwrapped_screen_point
 from flat_rubik.geometry import board_point, center_at, rotation_handles
 from flat_rubik.layer_motion import ease
 
@@ -12,7 +12,7 @@ from flat_rubik.layer_motion import ease
 class DragTurn:
     threshold = 10
 
-    def __init__(self, animator, point, size, mode, zoom=(1, 1)):
+    def __init__(self, animator, point, size, mode, zoom=(1, 1), fit_mode=None):
         self.start = point
         self.moved = False
         self.preview = None
@@ -21,7 +21,7 @@ class DragTurn:
         self.distance = max(45, min(size) * .22)
         if animator.pending:
             return
-        mapped = flat_pointer(point, size, mode, zoom)
+        mapped = flat_pointer(point, size, mode, zoom, fit_mode)
         if not mapped:
             return
         local, virtual = mapped
@@ -39,9 +39,11 @@ class DragTurn:
             slot = slot_at(local, virtual)
             if slot:
                 faces.sort(key=lambda f: FACE_NORMALS[f] != slot[1])
-        _, destination = flat_viewport(size, mode, zoom)
+        _, destination = flat_viewport(size, mode, zoom, fit_mode)
 
         def display(p):
+            if mode == UNWRAPPED:
+                return unwrapped_screen_point(p, destination, virtual)
             x, y = board_point(p, *virtual)
             return destination.x + x * destination.w / virtual[0], destination.y + y * destination.h / virtual[1]
 
