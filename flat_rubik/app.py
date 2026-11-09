@@ -8,7 +8,6 @@ from copy import deepcopy
 
 from flat_rubik.animation import Animator
 from flat_rubik.cube import scramble, FACE_COLORS
-from flat_rubik.controls import move_for_click
 from flat_rubik.geometry import center_at
 from flat_rubik.renderer import BACKGROUND_RGB, text_surface
 from flat_rubik.cube_view import draw_cube, view_regions, cube_face_at
@@ -241,11 +240,10 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                 if event.button in (1, 3) and cube_rect.collidepoint(event.pos):
                     local = (event.pos[0] - cube_rect.x, event.pos[1] - cube_rect.y)
                     face = cube_face_at(local, cube_rect.size, animator, yaw, pitch)
-                    if event.button == 3:
-                        if face:
-                            animator.enqueue([face + "'"])
-                    else:
+                    if event.button == 1:
                         orbit = dict(start=event.pos, last=event.pos, moved=False, face=face)
+                    elif face and not editor.editing:
+                        animator.enqueue([face + "'"])
                     continue
                 action = next((name for name, rect in actions.items() if rect.collidepoint(event.pos)), None)
                 if event.button == 1 and action == "faces":
@@ -305,23 +303,13 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                     elif action == "reset":
                         animator.reset()
                         paused, double = False, False
-                elif event.button in (1, 3):
-                    face = next((f for f, rect in buttons.items() if rect.collidepoint(event.pos)), None)
-                    inverse = event.button == 3 or (face and screen.get_width() < 600 and screen.get_height() >= 600 and event.pos[0] < buttons[face].centerx)
-                    move = face + ("'" if inverse else "") if face else None
-                    if board.collidepoint(event.pos):
-                        local = (event.pos[0] - board.x, event.pos[1] - board.y)
-                        mapped = flat_pointer(local, board.size, flat_mode(), active_zoom(), fit_mode, equal_pieces=equal_pieces)
-                        move = move_for_click(mapped[0], event.button, mapped[1]) if mapped else None
-                        if event.button == 1 and not animator.pending:
-                            candidate = DragTurn(animator, local, board.size, flat_mode(), active_zoom(), fit_mode, equal_pieces=equal_pieces)
-                            if candidate.candidates:
-                                flat_drag = (candidate, board.copy(), move)
-                                continue
-                    if move:
-                        animator.enqueue([move])
+                elif event.button == 1 and board.collidepoint(event.pos) and not animator.pending:
+                    local = (event.pos[0] - board.x, event.pos[1] - board.y)
+                    candidate = DragTurn(animator, local, board.size, flat_mode(), active_zoom(), fit_mode, equal_pieces=equal_pieces)
+                    if candidate.candidates:
+                        flat_drag = (candidate, board.copy())
             elif event.type == pygame.MOUSEMOTION and flat_drag is not None:
-                gesture, drag_board, tap_move = flat_drag
+                gesture, drag_board = flat_drag
                 gesture.motion((event.pos[0] - drag_board.x, event.pos[1] - drag_board.y))
             elif event.type == pygame.MOUSEMOTION and editor.editing and editor_painting:
                 local = (event.pos[0] - board.x, event.pos[1] - board.y)
@@ -339,15 +327,13 @@ async def run_async(max_frames=None, session_path=SESSION_PATH):
                 animator.set_duration(duration_at(event.pos[0], slider))
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 if flat_drag is not None:
-                    gesture, drag_board, tap_move = flat_drag
+                    gesture, drag_board = flat_drag
                     point = event.pos[0] - drag_board.x, event.pos[1] - drag_board.y
                     if gesture.release(point):
                         paused = False
-                    elif not gesture.moved and tap_move and drag_board.collidepoint(event.pos):
-                        animator.enqueue([tap_move])
                     flat_drag = None
                 if (orbit is not None and not orbit["moved"] and orbit["face"]
-                        and math.dist(event.pos, orbit["start"]) <= 8
+                        and not editor.editing and math.dist(event.pos, orbit["start"]) <= 8
                         and cube_rect.collidepoint(event.pos)):
                     animator.enqueue([orbit["face"]])
                 editor_painting = False

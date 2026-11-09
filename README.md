@@ -109,8 +109,8 @@ la deschiderile următoare se reia modul ales ultima dată.
 Butonul **Mod: 90°** comută la **Puzzle 45°** și invers.
 Cele două jocuri au stări separate; schimbarea modului nu resetează pozițiile.
 
-În **Puzzle 45°**, fiecare clic deplasează cele opt piese ale feței cu o
-poziție în ciclul de opt locuri. Clic dreapta inversează mutarea. Poți roti
+În **Puzzle 45°**, fiecare mutare deplasează cele opt piese ale feței cu o
+poziție în ciclul de opt locuri. Sensul tragerii inversează mutarea. Poți roti
 imediat oricare altă față, fără aliniere suplimentară. Muchiile și colțurile
 pot schimba locurile între ele: fiecare piesă își păstrează identitatea,
 cele două sau trei culori și ordinea lor, iar forma se adaptează poziției.
@@ -142,14 +142,12 @@ Setările se salvează automat la modificare; fișierul nu este inclus în Git s
 
 ## Comenzi
 
-Pe fiecare centru fix sunt două săgeți: **←** rotește fața în sens invers,
-iar **→** în sens orar, privind fața din exterior. Ambele se activează cu
-clic stânga și folosesc pasul modului activ (90° sau 45°).
+Trage piesele sau centrele din desenul plat pentru a roti o față.
+Clicurile simple și atingerile scurte nu rotesc fețele din desenul plat.
 
 | Tastă | Acțiune |
 | --- | --- |
-| Clic stânga pe un centru | Rotație de 90° în sens orar, privind fața din exterior |
-| Clic dreapta pe un centru | Aceeași față în sens invers |
+| Tragere pe o piesă sau un centru | Rotație în sensul gestului, cu pasul modului activ |
 | R, L, U, D, F, B | Rotație de 90° în sens orar, privind fața din exterior |
 | Shift + față | Rotație inversă |
 | Ctrl + față | Rotație dublă |
@@ -165,12 +163,9 @@ clic stânga și folosesc pasul modului activ (90° sau 45°).
 | E | Deschide editorul „Culori”; în editor renunță la modificări |
 
 F = roșu, B = portocaliu, U = galben, R = verde, D = alb, L = albastru.
-Clicurile funcționează pe cercul roșu, inelul portocaliu și cele patru
-centre laterale de o singură culoare. Centrele au săgeți pentru cele două
-sensuri de rotație, fără litere. Clicurile pe piesele mobile sau în
-spațiile libere sunt ignorate. Mutările se adaugă în coada de animații,
-inclusiv când o rotație este deja în curs. Detectarea se adaptează la
-redimensionarea ferestrei.
+Tragerea poate începe pe o piesă sau un centru când animația anterioară
+s-a terminat. La eliberare se execută o singură mutare. Clicurile pe
+butoanele fețelor nu mai adaugă mutări. Tastatura rămâne disponibilă.
 Durata inițială este de 1 secundă pe mutare, inclusiv pentru cele duble.
 Glisorul „Durata rotației” permite reglarea între 0,2 și 3 secunde;
 spre dreapta animația devine mai lentă. Reglarea în timpul unei mutări
@@ -186,9 +181,8 @@ Vederea **Ambele** afișează cercul și cubul Rubik 3D sincronizate, inclusiv
 în timpul rotațiilor, pauzei și amestecării. Butonul **Vedere** din partea
 de sus comută între Cerc, Cub și Ambele, inclusiv pe telefon. Trage pe cub
 cu mouse-ul sau degetul pentru a vedea celelalte fețe; acest gest schimbă
-doar unghiul de privire. Un clic stânga sau o atingere scurtă pe o față a
-cubului o rotește în sens orar; clic dreapta rotește în sens invers.
-Poți folosi și panoul, săgețile cercului sau tastatura.
+doar unghiul de privire. Pe cubul 3D, clic stânga sau o atingere scurtă rotește
+fața în sens orar; clic dreapta rotește invers. În desenul plat, folosește tragerea.
 Pe telefon, în Ambele, vederile se așază vertical.
 Editorul de culori și puzzle-ul experimental de 45° folosesc cercul;
 vederea 3D reprezintă modul Rubik de 90°.
@@ -241,7 +235,7 @@ Cele șase butoane ale fețelor sunt ascunse implicit pe laptop și afișate pe
 telefoanele mici. **Fețe: DA/NU** le arată sau le restrânge, iar alegerea se
 salvează. Pe telefon, panoul ocupă 292 de pixeli cu aceste butoane și 196 fără
 ele, față de 326 anterior. Pe laptop, panoul lateral este mai îngust.
-Clic stânga/dreapta pe butoanele fețelor are același efect ca pe centre.
+Clicurile pe butoanele fețelor nu rotesc piesele.
 **Trasee** nu este afișat, iar traseele din salvările mai vechi sunt dezactivate.
 
 Zonele fețelor au fundaluri discret colorate și delimitări fixe, independente
@@ -373,8 +367,8 @@ In desenul Flat Rubik poti apasa o piesa sau un centru si trage cu degetul
 sau cu butonul stang al mouse-ului tinut apasat. Directia tragerii alege fata
 si sensul; zona antrenata se evidentiaza, iar piesele urmaresc gestul.
 La eliberare se completeaza o singura mutare: 90 de grade in modul Rubik,
-45 de grade in puzzle-ul de 45 de grade. O atingere scurta pe centru
-pastreaza rotirea prin clic; clicul drept pastreaza sensul invers.
+45 de grade in puzzle-ul de 45 de grade. Atingerile scurte si clicul drept
+nu rotesc fetele.
 
 Gestul este disponibil cand animatia anterioara s-a terminat. Editorul de
 culori pastreaza clicurile pentru colorare. In vederea cubului 3D, tragerea

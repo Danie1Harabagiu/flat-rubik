@@ -48,6 +48,7 @@ class CubeViewTests(unittest.TestCase):
                  patch('pygame.event.get', side_effect=batches):
                 run(max_frames=len(batches), session_path=None)
             self.assertEqual(animator.current, None if drag else expected)
+            self.assertEqual(animator.pending, 0 if drag else 1)
 
     def test_animation_end_matches_physical_model(self):
         for face in "RLUDFB":
@@ -67,6 +68,27 @@ class CubeViewTests(unittest.TestCase):
                         actual_stickers = {tuple(round(v) for v in animated_point(n, cubie.position, animator)): color
                                            for n, color in cubie.stickers.items()}
                         self.assertEqual(actual_stickers, target.stickers)
+
+    def test_left_and_right_clicks_on_cube_enqueue_inverse_moves(self):
+        from unittest.mock import patch
+        from flat_rubik.app import run
+        from flat_rubik.ui import layout
+        area = layout((1080, 800))[0].copy()
+        area.y += 46
+        area.h -= 46
+        _, cube = view_regions(area, 'Ambele')
+        animator = Animator()
+        face = cube_face_at((cube.w // 2, cube.h // 2), cube.size, animator)
+        self.assertIsNotNone(face)
+        events = [pygame.event.Event(kind, pos=cube.center, button=button)
+                  for button in (1, 3)
+                  for kind in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP)]
+        with patch('flat_rubik.app.Animator', return_value=animator), \
+                patch('pygame.event.get', return_value=events):
+            run(max_frames=1, session_path=None)
+        self.assertEqual([animator.current] + list(animator.queue), [face, face + "'"])
+        animator.update(2 * animator.duration)
+        self.assertTrue(animator.cube.solved)
 
     def test_split_views_cover_available_space(self):
         for size in ((800, 700), (390, 472), (390, 798)):

@@ -46,7 +46,7 @@ class MouseControlsTests(unittest.TestCase):
                 self.assertEqual(move_for_click(left, 1, size), face + "'")
                 self.assertEqual(move_for_click(right, 1, size), face)
 
-    def test_pygame_mouse_events_enqueue_inverse_pairs(self):
+    def test_pygame_clicks_do_not_rotate_faces(self):
         import pygame
         from flat_rubik.app import run
         animator = Animator()
@@ -73,7 +73,7 @@ class MouseControlsTests(unittest.TestCase):
         events.append(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(0, 0), button=1))
         with patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):
             run(max_frames=1, session_path=None)
-        self.assertEqual([animator.current] + list(animator.queue), expected)
+        self.assertEqual(animator.pending, 0)
         animator.update(4)
         self.assertEqual(animator.cube.snapshot(), Cube().snapshot())
 
@@ -83,7 +83,7 @@ class MouseControlsTests(unittest.TestCase):
         self.assertEqual(Cube().color_counts()["alb"], 9)
         self.assertEqual(CULORI_RGB["alb"], (255, 255, 255))
 
-    def test_phone_touch_selects_both_directions_without_duplicate_moves(self):
+    def test_phone_face_button_taps_do_not_rotate(self):
         import pygame
         from flat_rubik.app import run
         from flat_rubik.ui import layout
@@ -109,7 +109,7 @@ class MouseControlsTests(unittest.TestCase):
              patch("pygame.event.get", return_value=events), \
              patch("pygame.display.set_mode", side_effect=lambda *args: set_mode(size)):
             run(max_frames=1, session_path=None)
-        self.assertEqual([animator.current] + list(animator.queue), expected)
+        self.assertEqual(animator.pending, 0)
 
 
 if __name__ == "__main__":

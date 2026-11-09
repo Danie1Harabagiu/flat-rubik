@@ -284,7 +284,7 @@ def draw_unwrapped(surface, animator, hovered=None, show_paths=False, facelets=N
                      pygame.Rect(destination.x, destination.y, destination.w,
                                  orange_y - destination.y - half_gap))
 
-    line_width = max(1, round(min(destination.size) / 420))
+    line_width = max(2, round(min(destination.size) / 210))
     # The repeated cut cubie is drawn in full at both ends, including all
     # stickers. Only the mobile rows extend beyond the center bands.
     cell = math.ceil(destination.w * cell_fraction)

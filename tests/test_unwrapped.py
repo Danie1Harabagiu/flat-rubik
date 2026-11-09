@@ -11,7 +11,7 @@ from flat_rubik.flat_view import (
 )
 from flat_rubik.cube import Cube
 from flat_rubik.projection import cubie_polygon
-from flat_rubik.renderer import BACKGROUND_RGB, CULORI_RGB
+from flat_rubik.renderer import BACKGROUND_RGB, CULORI_RGB, OUTLINE_RGB
 
 
 class UnwrappedTests(unittest.TestCase):
@@ -31,9 +31,9 @@ class UnwrappedTests(unittest.TestCase):
                 self.assertEqual(pixel(edge + cell / 4, row), CULORI_RGB['alb'])
                 self.assertIsNotNone(unwrapped_pointer(
                     (edge - cell / 4, destination.y + row * destination.h / UNWRAP_RADIAL_UNITS), size))
-        self.assertEqual(pixel(destination.left + cell / 2, 2.5), BACKGROUND_RGB)
+        self.assertIn(pixel(destination.left + cell / 2, 2.5), (BACKGROUND_RGB, OUTLINE_RGB))
         for row in (1, 3, 5, 7):
-            self.assertEqual(pixel(destination.centerx, row), BACKGROUND_RGB)
+            self.assertIn(pixel(destination.centerx, row), (BACKGROUND_RGB, OUTLINE_RGB))
 
     def test_all_moves_render_during_animation_and_restore_clip(self):
         surface = pygame.Surface((1000, 700))

@@ -242,8 +242,7 @@ class EditorTests(unittest.TestCase):
                        circle.y + destination.y + shown[1] * destination.h / virtual[1])
         events = [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e, mod=0),
                   pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=actions["pause"].center, button=1),
-                  pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=click_point, button=1),
-                  pygame.event.Event(pygame.MOUSEBUTTONUP, pos=click_point, button=1)]
+                  pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f, mod=0)]
         with patch("flat_rubik.app.ColorEditor", return_value=editor), patch("flat_rubik.app.Animator", return_value=animator), patch("pygame.event.get", return_value=events):
             run(max_frames=1, session_path=None)
         self.assertFalse(editor.editing)
